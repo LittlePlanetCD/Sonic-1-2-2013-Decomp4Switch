@@ -1,9 +1,7 @@
 #include "RetroEngine.hpp"
 
-float timeAttackU[] = {
-    1.0, 321.0, 641.0, 1.0, 321.0, 641.0,
-};
-float timeAttackV[] = { 1.0, 1.0, 1.0, 241.0, 241.0, 241.0 };
+float timeAttackU[] = { 1.0, 321.0, 641.0, 1.0, 321.0, 641.0, 641.0 };
+float timeAttackV[] = { 1.0, 1.0, 1.0, 241.0, 241.0, 241.0, 721.0 };
 
 void RecordsScreen_Create(void *objPtr)
 {
@@ -109,13 +107,26 @@ void RecordsScreen_Main(void *objPtr)
                     case 9:
 #if !RETRO_USE_ORIGINAL_CODE
                     case 11:
+#endif
                         self->timeAttackU = timeAttackU[0];
                         self->timeAttackV = timeAttackV[0];
                         break;
-#endif
                     case 10:
                         self->timeAttackU = timeAttackU[1];
                         self->timeAttackV = timeAttackV[1];
+                        break;
+                }
+            }
+            else if (Engine.gameType == GAME_SONIC1 && self->zoneID >= 6) {
+                switch (self->zoneID) {
+                    default: break;
+                    case 6: // dumber stupider dumber
+                        self->timeAttackU = timeAttackU[6];
+                        self->timeAttackV = timeAttackV[6];
+                        break;
+                    case 7:
+                        self->timeAttackU = timeAttackU[(self->recordOffset - 1) % 6];
+                        self->timeAttackV = timeAttackV[(self->recordOffset - 1) % 6];
                         break;
                 }
             }
@@ -394,13 +405,26 @@ void RecordsScreen_Main(void *objPtr)
                         case 9:
 #if !RETRO_USE_ORIGINAL_CODE
                         case 11:
+#endif
                             self->timeAttackU = timeAttackU[0];
                             self->timeAttackV = timeAttackV[0];
                             break;
-#endif
                         case 10:
                             self->timeAttackU = timeAttackU[1];
                             self->timeAttackV = timeAttackV[1];
+                            break;
+                    }
+                }
+                else if (Engine.gameType == GAME_SONIC1 && self->zoneID >= 6) {
+                    switch (self->zoneID) {
+                        default: break;
+                        case 6: // dumber stupider dumber
+                            self->timeAttackU = timeAttackU[6];
+                            self->timeAttackV = timeAttackV[6];
+                            break;
+                        case 7:
+                            self->timeAttackU = timeAttackU[(self->recordOffset + self->actID - 1) % 6];
+                            self->timeAttackV = timeAttackV[(self->recordOffset + self->actID - 1) % 6];
                             break;
                     }
                 }
