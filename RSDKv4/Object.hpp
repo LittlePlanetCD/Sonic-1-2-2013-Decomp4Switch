@@ -8,6 +8,11 @@
 #define OBJECT_COUNT     (0x100)
 #define TYPEGROUP_COUNT  (0x103)
 
+enum ObjectControlModes {
+    CONTROLMODE_NONE   = -1,
+    CONTROLMODE_NORMAL = 0,
+};
+
 struct TypeGroupList {
     int entityRefs[ENTITY_COUNT];
     int listSize;
@@ -33,7 +38,7 @@ struct Entity {
     byte type;
     byte propertyValue;
     byte priority;
-    sbyte drawOrder;
+    byte drawOrder;
     byte direction;
     byte inkEffect;
     byte animation;
@@ -60,15 +65,15 @@ struct Entity {
 };
 
 struct NativeEntityBase {
-    void (*createPtr)(void *objPtr);
-    void (*mainPtr)(void *objPtr);
+    void (*eventCreate)(void *objPtr);
+    void (*eventMain)(void *objPtr);
     int slotID;
     int objectID;
 };
 
 struct NativeEntity {
-    void (*createPtr)(void *objPtr);
-    void (*mainPtr)(void *objPtr);
+    void (*eventCreate)(void *objPtr);
+    void (*eventMain)(void *objPtr);
     int slotID;
     int objectID;
     void *extra[0x100];
@@ -83,14 +88,22 @@ enum ObjectGroups {
 };
 
 enum ObjectPriority {
-    PRIORITY_ACTIVE_BOUNDS,
+    // The entity is active if the entity is on screen or within 128 pixels of the screen borders on any axis
+    PRIORITY_BOUNDS,
+    // The entity is always active, unless the stage state is PAUSED/FROZEN
     PRIORITY_ACTIVE,
-    PRIORITY_ACTIVE_PAUSED,
-    PRIORITY_ACTIVE_XBOUNDS,
-    PRIORITY_ACTIVE_XBOUNDS_REMOVE,
+    // Same as PRIORITY_ACTIVE, the entity even runs when the stage state is PAUSED/FROZEN
+    PRIORITY_ALWAYS,
+    // Same as PRIORITY_BOUNDS, however it only does checks on the x-axis, so when in bounds on the x-axis, the y position doesn't matter
+    PRIORITY_XBOUNDS,
+    // Same as PRIORITY_XBOUNDS, however the entity's type will be set to BLANK OBJECT when it becomes inactive
+    PRIORITY_XBOUNDS_DESTROY,
+    // Never Active.
     PRIORITY_INACTIVE,
-    PRIORITY_ACTIVE_BOUNDS_SMALL,
-    PRIORITY_ACTIVE_2P_UNKNOWN
+    // Same as PRIORITY_BOUNDS, but uses the smaller bounds (32px off screen rather than the normal 128)
+    PRIORITY_BOUNDS_SMALL,
+    // Same as PRIORITY_ACTIVE, but uses the smaller bounds in object.outOfBounds
+    PRIORITY_ACTIVE_SMALL
 };
 
 // Native Objects
@@ -170,11 +183,11 @@ inline NativeEntity *GetNativeObject(uint objID)
 }
 
 // Custom, used for cleaning purposes
-inline void RemoveNativeObjectType(void (*objCreate)(void *objPtr), void (*objMain)(void *objPtr))
+inline void RemoveNativeObjectType(void (*eventCreate)(void *objPtr), void (*eventMain)(void *objPtr))
 {
     for (int i = nativeEntityCount - 1; i >= 0; --i) {
         NativeEntity *entity = &objectEntityBank[activeEntityList[i]];
-        if (entity->createPtr == objCreate && entity->mainPtr == objMain) {
+        if (entity->eventCreate == eventCreate && entity->eventMain == eventMain) {
             RemoveNativeObject((NativeEntityBase *)entity);
         }
     }

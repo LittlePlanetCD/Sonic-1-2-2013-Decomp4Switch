@@ -11,15 +11,15 @@ int globalVariablesCount;
 int globalVariables[GLOBALVAR_COUNT];
 char globalVariableNames[GLOBALVAR_COUNT][0x20];
 
-void *nativeFunction[NATIIVEFUNCTION_MAX];
+void *nativeFunction[NATIIVEFUNCTION_COUNT];
 int nativeFunctionCount = 0;
 
 char gamePath[0x100];
-int saveRAM[SAVEDATA_MAX];
-Achievement achievements[ACHIEVEMENT_MAX];
+int saveRAM[SAVEDATA_SIZE];
+Achievement achievements[ACHIEVEMENT_COUNT];
 int achievementCount = 0;
 
-LeaderboardEntry leaderboards[LEADERBOARD_MAX];
+LeaderboardEntry leaderboards[LEADERBOARD_COUNT];
 
 MultiplayerData multiplayerDataIN  = MultiplayerData();
 MultiplayerData multiplayerDataOUT = MultiplayerData();
@@ -40,32 +40,14 @@ int sendCounter = 0;
 #endif
 
 #if !RETRO_USE_ORIGINAL_CODE
-bool forceUseScripts          = false;
-bool forceUseScripts_Config   = false;
-bool skipStartMenu            = false;
-bool skipStartMenu_Config     = false;
-bool disableFocusPause        = false;
-bool disableFocusPause_Config = false;
+bool forceUseScripts         = false;
+bool forceUseScripts_Config  = false;
+bool skipStartMenu           = false;
+bool skipStartMenu_Config    = false;
+int disableFocusPause        = 0;
+int disableFocusPause_Config = 0;
 
 bool useSGame = false;
-
-#if RETRO_PLATFORM == RETRO_LINUX
-std::string getXDGDataPath()
-{
-    std::string path;
-    char const *dataHome = getenv("XDG_DATA_HOME");
-    if (dataHome == NULL) {
-        char const *home = getenv("HOME");
-        path += home;
-        path += "/.local/share";
-    }
-    else {
-        path += dataHome;
-    }
-    path += "/RSDKv4";
-    return path;
-}
-#endif
 
 bool ReadSaveRAMData()
 {
@@ -81,8 +63,6 @@ bool ReadSaveRAMData()
     sprintf(buffer, "%s/%sSData.bin", redirectSave ? modsPath : gamePath, savePath);
 #elif RETRO_PLATFORM == RETRO_iOS
     sprintf(buffer, "%s/%sSData.bin", redirectSave ? modsPath : getDocumentsPath(), savePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(buffer, "%s/%sSData.bin", redirectSave ? modsPath : getXDGDataPath().c_str(), savePath);
 #else
     sprintf(buffer, "%s%sSData.bin", redirectSave ? modsPath : gamePath, savePath);
 #endif
@@ -113,8 +93,6 @@ bool ReadSaveRAMData()
         sprintf(buffer, "%s/%sSGame.bin", redirectSave ? modsPath : gamePath, savePath);
 #elif RETRO_PLATFORM == RETRO_iOS
         sprintf(buffer, "%s/%sSGame.bin", redirectSave ? modsPath : getDocumentsPath(), savePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-        sprintf(buffer, "%s/%sSGame.bin", redirectSave ? modsPath : getXDGDataPath().c_str(), savePath);
 #else
         sprintf(buffer, "%s%sSGame.bin", redirectSave ? modsPath : gamePath, savePath);
 #endif
@@ -138,7 +116,7 @@ bool ReadSaveRAMData()
             return false;
         useSGame = true;
     }
-    fRead(saveRAM, sizeof(int), SAVEDATA_MAX, saveFile);
+    fRead(saveRAM, sizeof(int), SAVEDATA_SIZE, saveFile);
     fClose(saveFile);
     return true;
 }
@@ -158,8 +136,6 @@ bool WriteSaveRAMData()
         sprintf(buffer, "%s/%sSData.bin", redirectSave ? modsPath : gamePath, savePath);
 #elif RETRO_PLATFORM == RETRO_iOS
         sprintf(buffer, "%s/%sSData.bin", redirectSave ? modsPath : getDocumentsPath(), savePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-        sprintf(buffer, "%s/%sSData.bin", redirectSave ? modsPath : getXDGDataPath().c_str(), savePath);
 #else
         sprintf(buffer, "%s%sSData.bin", redirectSave ? modsPath : gamePath, savePath);
 #endif
@@ -189,8 +165,6 @@ bool WriteSaveRAMData()
         sprintf(buffer, "%s/%sSGame.bin", redirectSave ? modsPath : gamePath, savePath);
 #elif RETRO_PLATFORM == RETRO_iOS
         sprintf(buffer, "%s/%sSGame.bin", redirectSave ? modsPath : getDocumentsPath(), savePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-        sprintf(buffer, "%s/%sSGame.bin", redirectSave ? modsPath : getXDGDataPath().c_str(), savePath);
 #else
         sprintf(buffer, "%s%sSGame.bin", redirectSave ? modsPath : gamePath, savePath);
 #endif
@@ -213,7 +187,7 @@ bool WriteSaveRAMData()
     FileIO *saveFile = fOpen(buffer, "wb");
     if (!saveFile)
         return false;
-    fWrite(saveRAM, sizeof(int), SAVEDATA_MAX, saveFile);
+    fWrite(saveRAM, sizeof(int), SAVEDATA_SIZE, saveFile);
     fClose(saveFile);
     return true;
 }
@@ -231,11 +205,6 @@ void InitUserdata()
     sprintf(modsPath, "%s/RSDKv4/", getResourcesPath());
 
     mkdir(gamePath, 0777);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(gamePath, "%s", getXDGDataPath().c_str());
-    sprintf(modsPath, "%s/", getXDGDataPath().c_str());
-
-    mkdir(getXDGDataPath().c_str(), 0755);
 #elif RETRO_PLATFORM == RETRO_ANDROID
     {
         char buffer[0x200];
@@ -266,8 +235,6 @@ void InitUserdata()
         sprintf(buffer, "%ssettings.ini", gamePath);
 #elif RETRO_PLATFORM == RETRO_OSX || RETRO_PLATFORM == RETRO_ANDROID
     sprintf(buffer, "%s/settings.ini", gamePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(buffer, "%s/settings.ini", getXDGDataPath().c_str());
 #else
     sprintf(buffer, BASE_PATH "settings.ini");
 #endif
@@ -304,9 +271,10 @@ void InitUserdata()
         }
 
         ini.SetInteger("Game", "Language", Engine.language = RETRO_EN);
+        ini.SetInteger("Game", "GameType", Engine.gameTypeID = 0);
         ini.SetBool("Game", "SkipStartMenu", skipStartMenu = false);
         skipStartMenu_Config = skipStartMenu;
-        ini.SetBool("Game", "DisableFocusPause", disableFocusPause = false);
+        ini.SetInteger("Game", "DisableFocusPause", disableFocusPause = 0);
         disableFocusPause_Config = disableFocusPause;
 
 #if RETRO_USE_NETWORKING
@@ -317,11 +285,7 @@ void InitUserdata()
 
         ini.SetBool("Window", "FullScreen", Engine.startFullScreen = DEFAULT_FULLSCREEN);
         ini.SetBool("Window", "Borderless", Engine.borderless = false);
-        #if RETRO_PLATFORM == RETRO_SWITCH
-        ini.SetBool("Window", "VSync", Engine.vsync = true);
-        #else
         ini.SetBool("Window", "VSync", Engine.vsync = false);
-        #endif
         ini.SetInteger("Window", "ScalingMode", Engine.scalingMode = 0);
         ini.SetInteger("Window", "WindowScale", Engine.windowScale = 2);
         ini.SetInteger("Window", "ScreenWidth", SCREEN_XSIZE_CONFIG = DEFAULT_SCREEN_XSIZE);
@@ -453,10 +417,14 @@ void InitUserdata()
 
         if (!ini.GetInteger("Game", "Language", &Engine.language))
             Engine.language = RETRO_EN;
+        if (!ini.GetInteger("Game", "GameType", &Engine.gameTypeID))
+            Engine.gameTypeID = 0;
+        Engine.releaseType = Engine.gameTypeID ? "USE_ORIGINS" : "USE_STANDALONE";
+
         if (!ini.GetBool("Game", "SkipStartMenu", &skipStartMenu))
             skipStartMenu = false;
         skipStartMenu_Config = skipStartMenu;
-        if (!ini.GetBool("Game", "DisableFocusPause", &disableFocusPause))
+        if (!ini.GetInteger("Game", "DisableFocusPause", &disableFocusPause))
             disableFocusPause = false;
         disableFocusPause_Config = disableFocusPause;
 
@@ -663,7 +631,7 @@ void InitUserdata()
 
         int nummaps = SDL_GameControllerAddMappingsFromFile(buffer);
         if (nummaps >= 0)
-            printLog("loaded %d controller mappings from '%s'\n", buffer, nummaps);
+            PrintLog("loaded %d controller mappings from '%s'\n", buffer, nummaps);
     }
 #endif
 
@@ -674,8 +642,6 @@ void InitUserdata()
         sprintf(buffer, "%sUData.bin", gamePath);
 #elif RETRO_PLATFORM == RETRO_OSX
     sprintf(buffer, "%s/UData.bin", gamePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(buffer, "%s/UData.bin", getXDGDataPath().c_str());
 #else
     sprintf(buffer, "%sUData.bin", gamePath);
 #endif
@@ -689,7 +655,7 @@ void InitUserdata()
     }
 }
 
-void writeSettings()
+void WriteSettings()
 {
     IniParser ini;
 
@@ -733,10 +699,14 @@ void writeSettings()
     ini.SetComment("Game", "LangComment",
                    "Sets the game language (0 = EN, 1 = FR, 2 = IT, 3 = DE, 4 = ES, 5 = JP, 6 = PT, 7 = RU, 8 = KO, 9 = ZH, 10 = ZS)");
     ini.SetInteger("Game", "Language", Engine.language);
-    ini.SetComment("Game", "SSMenuComment", "if set to true, disables the start menu");
+    ini.SetComment("Game", "GameTypeComment", "Determines game type in scripts (0 = Standalone/Original releases, 1 = Origins release)");
+    ini.SetInteger("Game", "GameType", Engine.gameTypeID);
+    ini.SetComment("Game", "SSMenuComment", "If set to true, disables the start menu");
     ini.SetBool("Game", "SkipStartMenu", skipStartMenu_Config);
-    ini.SetComment("Game", "DFPMenuComment", "if set to true, disables the game pausing when focus is lost");
-    ini.SetBool("Game", "DisableFocusPause", disableFocusPause_Config);
+    ini.SetComment("Game", "DFPMenuComment",
+                   "Handles pausing behaviour when focus is lost\n; 0 = Game focus enabled, engine focus enabled\n; 1 = Game focus disabled, "
+                   "engine focus enabled\n; 2 = Game focus enabled, engine focus disabled\n; 3 = Game focus disabled, engine focus disabled");
+    ini.SetInteger("Game", "DisableFocusPause", disableFocusPause_Config);
 
 #if RETRO_USE_NETWORKING
     ini.SetComment("Network", "HostComment", "The host (IP address or \"URL\") that the game will try to connect to.");
@@ -749,7 +719,8 @@ void writeSettings()
     ini.SetBool("Window", "FullScreen", Engine.startFullScreen);
     ini.SetComment("Window", "BLComment", "Determines if the window will be borderless or not");
     ini.SetBool("Window", "Borderless", Engine.borderless);
-    ini.SetComment("Window", "VSComment", "Determines if VSync will be active or not");
+    ini.SetComment("Window", "VSComment",
+                   "Determines if VSync will be active or not (not recommended as the engine is built around running at 60 FPS)");
     ini.SetBool("Window", "VSync", Engine.vsync);
     ini.SetComment("Window", "SMComment", "Determines what scaling is used. 0 is nearest neighbour, 1 is linear.");
     ini.SetInteger("Window", "ScalingMode", Engine.scalingMode);
@@ -767,7 +738,7 @@ void writeSettings()
 
 #if RETRO_USING_SDL2
     ini.SetComment("Keyboard 1", "IK1Comment",
-                   "Keyboard Mappings for P1 (Based on: https://github.com/libsdl-org/sdlwiki/blob/main/SDLScancodeLookup.mediawiki)");
+                   "Keyboard Mappings for P1 (Based on: https://github.com/libsdl-org/sdlwiki/blob/main/SDL2/SDLScancodeLookup.mediawiki)");
 #endif
 #if RETRO_USING_SDL1
     ini.SetComment("Keyboard 1", "IK1Comment", "Keyboard Mappings for P1 (Based on: https://wiki.libsdl.org/SDLKeycodeLookup)");
@@ -789,7 +760,7 @@ void writeSettings()
 
 #if RETRO_USING_SDL2
     ini.SetComment("Controller 1", "IC1Comment",
-                   "Controller Mappings for P1 (Based on: https://github.com/libsdl-org/sdlwiki/blob/main/SDLScancodeLookup.mediawiki)");
+                   "Controller Mappings for P1 (Based on: https://github.com/libsdl-org/sdlwiki/blob/main/SDL2/SDL_GameControllerButton.mediawiki)");
     ini.SetComment("Controller 1", "IC1Comment2", "Extra buttons can be mapped with the following IDs:");
     ini.SetComment("Controller 1", "IC1Comment3", "CONTROLLER_BUTTON_ZL             = 16");
     ini.SetComment("Controller 1", "IC1Comment4", "CONTROLLER_BUTTON_ZR             = 17");
@@ -832,8 +803,6 @@ void writeSettings()
         sprintf(buffer, "%ssettings.ini", gamePath);
 #elif RETRO_PLATFORM == RETRO_OSX
     sprintf(buffer, "%s/settings.ini", gamePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(buffer, "%s/settings.ini", getXDGDataPath().c_str());
 #else
     sprintf(buffer, "%ssettings.ini", gamePath);
 #endif
@@ -854,8 +823,6 @@ void ReadUserdata()
     sprintf(buffer, "%s/%sUData.bin", redirectSave ? modsPath : gamePath, savePath);
 #elif RETRO_PLATFORM == RETRO_iOS
     sprintf(buffer, "%s/%sUData.bin", redirectSave ? modsPath : getDocumentsPath(), savePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(buffer, "%s/%sUData.bin", redirectSave ? modsPath : getXDGDataPath().c_str(), savePath);
 #else
     sprintf(buffer, "%s%sUData.bin", redirectSave ? modsPath : gamePath, savePath);
 #endif
@@ -878,11 +845,11 @@ void ReadUserdata()
         return;
 
     int buf = 0;
-    for (int a = 0; a < ACHIEVEMENT_MAX; ++a) {
+    for (int a = 0; a < ACHIEVEMENT_COUNT; ++a) {
         fRead(&buf, 4, 1, userFile);
         achievements[a].status = buf;
     }
-    for (int l = 0; l < LEADERBOARD_MAX; ++l) {
+    for (int l = 0; l < LEADERBOARD_COUNT; ++l) {
         fRead(&buf, 4, 1, userFile);
         leaderboards[l].score = buf;
         if (!leaderboards[l].score)
@@ -909,8 +876,6 @@ void WriteUserdata()
     sprintf(buffer, "%s/%sUData.bin", redirectSave ? modsPath : gamePath, savePath);
 #elif RETRO_PLATFORM == RETRO_iOS
     sprintf(buffer, "%s/%sUData.bin", redirectSave ? modsPath : getDocumentsPath(), savePath);
-#elif RETRO_PLATFORM == RETRO_LINUX
-    sprintf(buffer, "%s/%sUData.bin", redirectSave ? modsPath : getXDGDataPath().c_str(), savePath);
 #else
     sprintf(buffer, "%s%sUData.bin", redirectSave ? modsPath : gamePath, savePath);
 #endif
@@ -933,8 +898,8 @@ void WriteUserdata()
     if (!userFile)
         return;
 
-    for (int a = 0; a < ACHIEVEMENT_MAX; ++a) fWrite(&achievements[a].status, 4, 1, userFile);
-    for (int l = 0; l < LEADERBOARD_MAX; ++l) fWrite(&leaderboards[l].score, 4, 1, userFile);
+    for (int a = 0; a < ACHIEVEMENT_COUNT; ++a) fWrite(&achievements[a].status, 4, 1, userFile);
+    for (int l = 0; l < LEADERBOARD_COUNT; ++l) fWrite(&leaderboards[l].score, 4, 1, userFile);
 
     fClose(userFile);
 
@@ -946,11 +911,11 @@ void WriteUserdata()
 
 void AwardAchievement(int id, int status)
 {
-    if (id < 0 || id >= ACHIEVEMENT_MAX)
+    if (id < 0 || id >= ACHIEVEMENT_COUNT)
         return;
 
     if (status == 100 && status != achievements[id].status)
-        printLog("Achieved achievement: %s (%d)!", achievements[id].name, status);
+        PrintLog("Achieved achievement: %s (%d)!", achievements[id].name, status);
 
     achievements[id].status = status;
 
@@ -970,7 +935,13 @@ void SetAchievement(int *achievementID, int *status)
 }
 #if RETRO_USE_MOD_LOADER
 void AddGameAchievement(int *unused, const char *name) { StrCopy(achievements[achievementCount++].name, name); }
-void SetAchievementDescription(int *id, const char *desc) { StrCopy(achievements[*id].desc, desc); }
+void SetAchievementDescription(uint *id, const char *desc)
+{
+    if (*id >= achievementCount)
+        return;
+
+    StrCopy(achievements[*id].desc, desc);
+}
 void ClearAchievements() { achievementCount = 0; }
 void GetAchievementCount() { scriptEng.checkResult = achievementCount; }
 void GetAchievementName(uint *id, int *textMenu)
@@ -1034,12 +1005,12 @@ int SetLeaderboard(int *leaderboardID, int *score)
         // 22 = TotalScore (S2)
 #if !RETRO_USE_ORIGINAL_CODE
         if (*score < leaderboards[*leaderboardID].score) {
-            printLog("Set leaderboard (%d) value to %d", *leaderboardID, score);
+            PrintLog("Set leaderboard (%d) value to %d", *leaderboardID, score);
             leaderboards[*leaderboardID].score = *score;
             WriteUserdata();
         }
         else {
-            printLog("Attempted to set leaderboard (%d) value to %d... but score was already %d!", *leaderboardID, *score,
+            PrintLog("Attempted to set leaderboard (%d) value to %d... but score was already %d!", *leaderboardID, *score,
                      leaderboards[*leaderboardID].score);
         }
 #endif
@@ -1050,13 +1021,13 @@ int SetLeaderboard(int *leaderboardID, int *score)
 void ShowLeaderboardsScreen()
 {
     /*TODO*/
-    printLog("we're showing the leaderboards screen");
+    PrintLog("we're showing the leaderboards screen");
 }
 
 bool disableFocusPause_Store = false;
 void Connect2PVS(int *gameLength, int *itemMode)
 {
-    printLog("Attempting to connect to 2P game (%d) (%d)", *gameLength, *itemMode);
+    PrintLog("Attempting to connect to 2P game (%d) (%d)", *gameLength, *itemMode);
 
     multiplayerDataIN.type = 0;
     matchValueData[0]      = 0;
@@ -1073,22 +1044,22 @@ void Connect2PVS(int *gameLength, int *itemMode)
     if (Engine.onlineActive) {
 #if RETRO_USE_NETWORKING
         disableFocusPause_Store = disableFocusPause;
-        disableFocusPause       = true;
-        runNetwork();
+        disableFocusPause       = 3;
+        RunNetwork();
 #endif
     }
 }
 void Disconnect2PVS()
 {
-    printLog("Attempting to disconnect from 2P game");
+    PrintLog("Attempting to disconnect from 2P game");
 
     if (Engine.onlineActive) {
 #if RETRO_USE_NETWORKING
         disableFocusPause = disableFocusPause_Store;
         // Engine.devMenu    = vsPlayerID;
         vsPlaying = false;
-        disconnectNetwork();
-        initNetwork();
+        DisconnectNetwork();
+        InitNetwork();
 #endif
     }
 }
@@ -1099,7 +1070,7 @@ void SendEntity(int *entityID, int *verify)
         memcpy(multiplayerDataOUT.data, &objectEntityList[*entityID], sizeof(Entity));
         if (Engine.onlineActive) {
 #if RETRO_USE_NETWORKING
-            sendData(*verify);
+            SendData(*verify);
 #endif
         }
     }
@@ -1107,20 +1078,20 @@ void SendEntity(int *entityID, int *verify)
 }
 void SendValue(int *value, int *verify)
 {
-    // printLog("Attempting to send value (%d) (%d)", *dataSlot, *value);
+    // PrintLog("Attempting to send value (%d) (%d)", *dataSlot, *value);
 
     multiplayerDataOUT.type    = 0;
     multiplayerDataOUT.data[0] = *value;
     if (Engine.onlineActive) {
 #if RETRO_USE_NETWORKING
-        sendData(*verify);
+        SendData(*verify);
 #endif
     }
 }
 bool receiveReady = false;
 void ReceiveEntity(int *entityID, int *incrementPos)
 {
-    // printLog("Attempting to receive entity (%d) (%d)", *clearOnReceive, *entityID);
+    // PrintLog("Attempting to receive entity (%d) (%d)", *clearOnReceive, *entityID);
 
     if (Engine.onlineActive && receiveReady) {
         // receiveReady = false;
@@ -1137,7 +1108,7 @@ void ReceiveEntity(int *entityID, int *incrementPos)
 }
 void ReceiveValue(int *value, int *incrementPos)
 {
-    // printLog("Attempting to receive value (%d) (%d)", *incrementPos, *value);
+    // PrintLog("Attempting to receive value (%d) (%d)", *incrementPos, *value);
 
     if (Engine.onlineActive && receiveReady) {
         // receiveReady = false;
@@ -1154,19 +1125,19 @@ void ReceiveValue(int *value, int *incrementPos)
 }
 void TransmitGlobal(int *globalValue, const char *globalName)
 {
-    printLog("Attempting to transmit global (%s) (%d)", globalName, *globalValue);
+    PrintLog("Attempting to transmit global (%s) (%d)", globalName, *globalValue);
 
     multiplayerDataOUT.type    = 2;
     multiplayerDataOUT.data[0] = GetGlobalVariableID(globalName);
     multiplayerDataOUT.data[1] = *globalValue;
     if (Engine.onlineActive) {
 #if RETRO_USE_NETWORKING
-        sendData();
+        SendData();
 #endif
     }
 }
 
-void receive2PVSData(MultiplayerData *data)
+void Receive2PVSData(MultiplayerData *data)
 {
     receiveReady = true;
     switch (data->type) {
@@ -1179,7 +1150,7 @@ void receive2PVSData(MultiplayerData *data)
     }
 }
 
-void receive2PVSMatchCode(int code)
+void Receive2PVSMatchCode(int code)
 {
     receiveReady = true;
     code &= 0x00000FF0;
@@ -1199,7 +1170,7 @@ void receive2PVSMatchCode(int code)
 #endif
 }
 
-void ShowPromoPopup(int *id, const char *popupName) { printLog("Attempting to show promo popup: \"%s\" (%d)", popupName, id ? *id : 0); }
+void ShowPromoPopup(int *id, const char *popupName) { PrintLog("Attempting to show promo popup: \"%s\" (%d)", popupName, id ? *id : 0); }
 void ShowSegaIDPopup()
 {
     // nothing here, its just all to a java method of the same name
@@ -1211,11 +1182,104 @@ void ShowOnlineSignIn()
 void ShowWebsite(int websiteID)
 {
     switch (websiteID) {
-        default: printLog("Showing unknown website: (%d)", websiteID); break;
-        case 0: printLog("Showing website: \"%s\" (%d)", "http://www.sega.com/mprivacy", websiteID); break;
-        case 1: printLog("Showing website: \"%s\" (%d)", "http://www.sega.com/legal", websiteID); break;
+        default: PrintLog("Showing unknown website: (%d)", websiteID); break;
+        case 0: PrintLog("Showing website: \"%s\" (%d)", "http://www.sega.com/mprivacy", websiteID); break;
+        case 1: PrintLog("Showing website: \"%s\" (%d)", "http://www.sega.com/legal", websiteID); break;
     }
 }
+
+#if RETRO_REV03
+enum NotifyCallbackIDs {
+    NOTIFY_DEATH_EVENT        = 128,
+    NOTIFY_TOUCH_SIGNPOST     = 129,
+    NOTIFY_HUD_ENABLE         = 130,
+    NOTIFY_ADD_COIN           = 131,
+    NOTIFY_KILL_ENEMY         = 132,
+    NOTIFY_SAVESLOT_SELECT    = 133,
+    NOTIFY_FUTURE_PAST        = 134,
+    NOTIFY_GOTO_FUTURE_PAST   = 135,
+    NOTIFY_BOSS_END           = 136,
+    NOTIFY_SPECIAL_END        = 137,
+    NOTIFY_DEBUGPRINT         = 138,
+    NOTIFY_KILL_BOSS          = 139,
+    NOTIFY_TOUCH_EMERALD      = 140,
+    NOTIFY_STATS_ENEMY        = 141,
+    NOTIFY_STATS_CHARA_ACTION = 142,
+    NOTIFY_STATS_RING         = 143,
+    NOTIFY_STATS_MOVIE        = 144,
+    NOTIFY_STATS_PARAM_1      = 145,
+    NOTIFY_STATS_PARAM_2      = 146,
+    NOTIFY_CHARACTER_SELECT   = 147,
+    NOTIFY_SPECIAL_RETRY      = 148,
+    NOTIFY_TOUCH_CHECKPOINT   = 149,
+    NOTIFY_ACT_FINISH         = 150,
+    NOTIFY_1P_VS_SELECT       = 151,
+    NOTIFY_CONTROLLER_SUPPORT = 152,
+    NOTIFY_STAGE_RETRY        = 153,
+    NOTIFY_SOUND_TRACK        = 154,
+    NOTIFY_GOOD_ENDING        = 155,
+    NOTIFY_BACK_TO_MAINMENU   = 156,
+    NOTIFY_LEVEL_SELECT_MENU  = 157,
+    NOTIFY_PLAYER_SET         = 158,
+    NOTIFY_EXTRAS_MODE        = 159,
+    NOTIFY_SPIN_DASH_TYPE     = 160,
+    NOTIFY_TIME_OVER          = 161,
+};
+
+void NotifyCallback(int *callback, int *param1, int *param2, int *param3)
+{
+    if (!callback || !param1)
+        return;
+
+    switch (*callback) {
+        default: PrintLog("NOTIFY: Unknown Callback -> %d", *param1); break;
+        case NOTIFY_DEATH_EVENT: PrintLog("NOTIFY: DeathEvent() -> %d", *param1); break;
+        case NOTIFY_TOUCH_SIGNPOST: PrintLog("NOTIFY: TouchSignPost() -> %d", *param1); break;
+        case NOTIFY_HUD_ENABLE: PrintLog("NOTIFY: HUDEnable() -> %d", *param1); break;
+        case NOTIFY_ADD_COIN: PrintLog("NOTIFY: AddCoin() -> %d", *param1); break;
+        case NOTIFY_KILL_ENEMY: PrintLog("NOTIFY: KillEnemy() -> %d", *param1); break;
+        case NOTIFY_SAVESLOT_SELECT: PrintLog("NOTIFY: SaveSlotSelect() -> %d", *param1); break;
+        case NOTIFY_FUTURE_PAST: PrintLog("NOTIFY: FuturePast() -> %d", *param1); break;
+        case NOTIFY_GOTO_FUTURE_PAST: PrintLog("NOTIFY: GotoFuturePast() -> %d", *param1); break;
+        case NOTIFY_BOSS_END: PrintLog("NOTIFY: BossEnd() -> %d", *param1); break;
+        case NOTIFY_SPECIAL_END: PrintLog("NOTIFY: SpecialEnd() -> %d", *param1); break;
+        case NOTIFY_DEBUGPRINT: PrintLog("NOTIFY: DebugPrint() -> %d, %d, %d", *param1, *param2, *param3); break;
+        case NOTIFY_KILL_BOSS: PrintLog("NOTIFY: KillBoss() -> %d", *param1); break;
+        case NOTIFY_TOUCH_EMERALD: PrintLog("NOTIFY: TouchEmerald() -> %d", *param1); break;
+        case NOTIFY_STATS_ENEMY: PrintLog("NOTIFY: StatsEnemy() -> %d, %d, %d", *param1, *param2, *param3); break;
+        case NOTIFY_STATS_CHARA_ACTION: PrintLog("NOTIFY: StatsCharaAction() -> %d, %d, %d", *param1, *param2, *param3); break;
+        case NOTIFY_STATS_RING: PrintLog("NOTIFY: StatsRing() -> %d", *param1); break;
+        case NOTIFY_STATS_MOVIE: PrintLog("NOTIFY: StatsMovie() -> %d", *param1); break;
+        case NOTIFY_STATS_PARAM_1: PrintLog("NOTIFY: StatsParam1() -> %d, %d, %d", *param1, *param2, *param3); break;
+        case NOTIFY_STATS_PARAM_2: PrintLog("NOTIFY: StatsParam2() -> %d", *param1); break;
+        case NOTIFY_CHARACTER_SELECT:
+            PrintLog("NOTIFY: CharacterSelect() -> %d", *param1);
+            SetGlobalVariableByName("game.callbackResult", 1);
+            SetGlobalVariableByName("game.continueFlag", 0);
+            break;
+        case NOTIFY_SPECIAL_RETRY:
+            PrintLog("NOTIFY: SpecialRetry() -> %d, %d, %d", *param1, *param2, *param3);
+            SetGlobalVariableByName("game.callbackResult", 1);
+            break;
+        case NOTIFY_TOUCH_CHECKPOINT: PrintLog("NOTIFY: TouchCheckpoint() -> %d", *param1); break;
+        case NOTIFY_ACT_FINISH: PrintLog("NOTIFY: ActFinish() -> %d", *param1); break;
+        case NOTIFY_1P_VS_SELECT: PrintLog("NOTIFY: 1PVSSelect() -> %d", *param1); break;
+        case NOTIFY_CONTROLLER_SUPPORT:
+            PrintLog("NOTIFY: ControllerSupport() -> %d", *param1);
+            SetGlobalVariableByName("game.callbackResult", 1);
+            break;
+        case NOTIFY_STAGE_RETRY: PrintLog("NOTIFY: StageRetry() -> %d", *param1); break;
+        case NOTIFY_SOUND_TRACK: PrintLog("NOTIFY: SoundTrack() -> %d", *param1); break;
+        case NOTIFY_GOOD_ENDING: PrintLog("NOTIFY: GoodEnding() -> %d", *param1); break;
+        case NOTIFY_BACK_TO_MAINMENU: PrintLog("NOTIFY: BackToMainMenu() -> %d", *param1); break;
+        case NOTIFY_LEVEL_SELECT_MENU: PrintLog("NOTIFY: LevelSelectMenu() -> %d", *param1); break;
+        case NOTIFY_PLAYER_SET: PrintLog("NOTIFY: PlayerSet() -> %d", *param1); break;
+        case NOTIFY_EXTRAS_MODE: PrintLog("NOTIFY: ExtrasMode() -> %d", *param1); break;
+        case NOTIFY_SPIN_DASH_TYPE: PrintLog("NOTIFY: SpindashType() -> %d", *param1); break;
+        case NOTIFY_TIME_OVER: PrintLog("NOTIFY: TimeOver() -> %d", *param1); break;
+    }
+}
+#endif
 
 void ExitGame() { Engine.running = false; }
 
@@ -1229,48 +1293,111 @@ void FileExists(int *unused, const char *filePath)
     }
 }
 
+#if RETRO_USE_MOD_LOADER
+void GetScreenWidth() { scriptEng.checkResult = SCREEN_XSIZE_CONFIG; }
+void GetWindowScale() { scriptEng.checkResult = Engine.windowScale; }
+void GetWindowScaleMode() { scriptEng.checkResult = Engine.scalingMode; }
+void GetWindowFullScreen() { scriptEng.checkResult = Engine.isFullScreen; }
+void GetWindowBorderless() { scriptEng.checkResult = Engine.borderless; }
+void GetWindowVSync() { scriptEng.checkResult = Engine.vsync; }
+
+bool changedScreenWidth = false;
 void SetScreenWidth(int *width, int *unused)
 {
-    SCREEN_XSIZE_CONFIG = *width;
-#if RETRO_PLATFORM != RETRO_ANDROID
-    SetScreenDimensions(SCREEN_XSIZE_CONFIG * Engine.windowScale, SCREEN_YSIZE * Engine.windowScale);
-#endif
-#if RETRO_USING_SDL2
-    InitRenderDevice();
-#endif
+    if (!width)
+        return;
 
-#if RETRO_USING_OPENGL
-    displaySettings.width   = SCREEN_XSIZE_CONFIG * Engine.windowScale;
-    displaySettings.height  = SCREEN_YSIZE * Engine.windowScale;
-    displaySettings.offsetX = 0;
-    setupViewport();
-#endif
+    SCREEN_XSIZE_CONFIG = *width;
+    changedScreenWidth  = SCREEN_XSIZE_CONFIG != SCREEN_XSIZE;
 }
+
 void SetWindowScale(int *scale, int *unused)
 {
-    Engine.windowScale = *scale;
-#if RETRO_USING_SDL2
-    SDL_SetWindowSize(Engine.window, SCREEN_XSIZE_CONFIG * Engine.windowScale, SCREEN_YSIZE * Engine.windowScale);
-#endif
+    if (!scale)
+        return;
 
-#if RETRO_USING_OPENGL
-    displaySettings.width   = SCREEN_XSIZE * Engine.windowScale;
-    displaySettings.height  = SCREEN_YSIZE * Engine.windowScale;
-    displaySettings.offsetX = 0;
-    setupViewport();
-#endif
+    Engine.windowScale = *scale;
 }
+
+void SetWindowScaleMode(int *mode, int *unused)
+{
+    if (!mode)
+        return;
+
+    Engine.scalingMode = *mode;
+}
+
 void SetWindowFullScreen(int *fullscreen, int *unused)
 {
+    if (!fullscreen)
+        return;
+
     Engine.isFullScreen    = *fullscreen;
     Engine.startFullScreen = *fullscreen;
-    setFullScreen(Engine.isFullScreen);
 }
+
 void SetWindowBorderless(int *borderless, int *unused)
 {
+    if (!borderless)
+        return;
+
     Engine.borderless = *borderless;
-#if RETRO_USING_SDL2
-    SDL_RestoreWindow(Engine.window);
-    SDL_SetWindowBordered(Engine.window, Engine.borderless ? SDL_FALSE : SDL_TRUE);
-#endif
 }
+
+void SetWindowVSync(int *enabled, int *unused)
+{
+    if (!enabled)
+        return;
+
+    Engine.vsync = *enabled;
+}
+void ApplyWindowChanges()
+{
+    for (int i = 0; i < TEXTURE_COUNT; ++i) {
+        glDeleteTextures(1, &textureList[i].id);
+    }
+
+    for (int i = 0; i < MESH_COUNT; ++i) {
+        MeshInfo *mesh = &meshList[i];
+        if (StrLength(mesh->fileName)) {
+            if (mesh->frameCount > 1)
+                free(mesh->frames);
+            if (mesh->indexCount)
+                free(mesh->indices);
+            if (mesh->vertexCount)
+                free(mesh->vertices);
+
+            mesh->frameCount  = 0;
+            mesh->indexCount  = 0;
+            mesh->vertexCount = 0;
+        }
+    }
+
+    if (changedScreenWidth)
+        SCREEN_XSIZE = SCREEN_XSIZE_CONFIG;
+    changedScreenWidth = false;
+
+    ReleaseRenderDevice(true);
+    InitRenderDevice();
+
+    for (int i = 1; i < TEXTURE_COUNT; ++i) {
+        if (StrLength(textureList[i].fileName)) {
+            char fileName[64];
+            StrCopy(fileName, textureList[i].fileName);
+            textureList[i].fileName[0] = 0;
+
+            LoadTexture(fileName, textureList[i].format);
+        }
+    }
+
+    for (int i = 0; i < MESH_COUNT; ++i) {
+        if (StrLength(meshList[i].fileName)) {
+            char fileName[64];
+            StrCopy(fileName, meshList[i].fileName);
+            meshList[i].fileName[0] = 0;
+
+            LoadMesh(fileName, meshList[i].textureID);
+        }
+    }
+}
+#endif

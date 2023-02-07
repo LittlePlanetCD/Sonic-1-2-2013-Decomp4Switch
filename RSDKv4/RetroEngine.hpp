@@ -128,7 +128,7 @@ typedef unsigned int uint;
 #define RETRO_USING_OPENGL (1)
 
 #define RETRO_SOFTWARE_RENDER (RETRO_RENDERTYPE == RETRO_SW_RENDER)
-#define RETRO_HARDWARE_RENDER (RETRO_RENDERTYPE == RETRO_HW_RENDER)
+//#define RETRO_HARDWARE_RENDER (RETRO_RENDERTYPE == RETRO_HW_RENDER)
 
 #if RETRO_USING_OPENGL
 #if RETRO_PLATFORM == RETRO_ANDROID
@@ -190,19 +190,42 @@ typedef unsigned int uint;
 
 #define RETRO_USE_HAPTICS (1)
 
+// NOTE: This is only used for rev00 stuff, it was removed in rev01 and later builds
+#if RETRO_PLATFORM <= RETRO_WP7
+#define RETRO_GAMEPLATFORMID (RETRO_PLATFORM)
+#else
+
+// use *this* macro to determine what platform the game thinks its running on (since only the first 7 platforms are supported natively by scripts)
+#if RETRO_PLATFORM == RETRO_LINUX
+#define RETRO_GAMEPLATFORMID (RETRO_WIN)
+#elif RETRO_PLATFORM == RETRO_UWP
+#define RETRO_GAMEPLATFORMID (UAP_GetRetroGamePlatformId())
+#elif RETRO_PLATFORM == RETRO_SWITCH
+#define RETRO_GAMEPLATFORMID (RETRO_WIN)
+#else
+#error Unspecified RETRO_GAMEPLATFORMID
+#endif
+
+#endif
+
 // Timeline:
-// 1 = S1 release RSDKv4 version
-// 0 = S2 release RSDKv4 version
+// 0 = S1 release RSDKv4 version
+// 1 = S2 release RSDKv4 version
 // 2 = S3 POC RSDKv4 version (I have no idea how we have this but woohoo apparently)
-#define RSDK_REVISION (2)
+// 3 = Sonic Origins version
+#define RSDK_REVISION (3)
 
 // reverts opcode list back to how it was in earliest S1 builds, fixes bugs on some datafiles
-// generally advised to keep this set to 0
 #define RETRO_REV00 (RSDK_REVISION == 0)
 
 // reverts opcode list back to how it was in earliest S2 builds, fixes bugs on some datafiles
-// generally advised to keep this set to 0
 #define RETRO_REV01 (RSDK_REVISION == 1)
+
+// reverts opcode list back to how it was in the S3 POC, this is the most common opcode list
+#define RETRO_REV02 (RSDK_REVISION == 2)
+
+// the default, uses the Sonic Origins opcode list, which is the latest version of RSDKv4
+#define RETRO_REV03 (RSDK_REVISION == 3)
 
 enum RetroLanguages {
     RETRO_EN = 0,
@@ -218,7 +241,7 @@ enum RetroLanguages {
     RETRO_ZS = 10,
 };
 
-#if RETRO_REV00 
+#if RETRO_REV00
 enum RetroEngineMessages {
     MESSAGE_NONE      = 0,
     MESSAGE_MESSAGE_1 = 1,
@@ -328,6 +351,9 @@ public:
         }
     }
 
+#if !RETRO_USE_ORIGINAL_CODE
+    bool usingDataFile_Config = false;
+#endif
     bool usingDataFile = false;
     bool usingBytecode = false;
 
@@ -337,10 +363,10 @@ public:
     bool running     = false;
     double deltaTime = 0;
 
-    int gameMode          = ENGINE_MAINGAME;
-    int language          = RETRO_EN;
+    int gameMode = ENGINE_MAINGAME;
+    int language = RETRO_EN;
 #if RETRO_REV00
-    int message           = 0;
+    int message = 0;
 #endif
     int gameDeviceType    = RETRO_STANDARD;
     int globalBoxRegion   = REGION_JP;
@@ -348,8 +374,10 @@ public:
 
     bool trialMode        = false;
     bool onlineActive     = true;
-    bool hapticsEnabled   = true;
     bool useHighResAssets = false;
+#if RETRO_USE_HAPTICS
+    bool hapticsEnabled = true;
+#endif
 
     int frameSkipSetting = 0;
     int frameSkipTimer   = 0;
@@ -380,7 +408,7 @@ public:
     bool showPaletteOverlay = false;
     bool useHQModes         = true;
 
-    bool hasFocus = true;
+    bool hasFocus  = true;
     int focusState = 0;
 #endif
 
@@ -399,13 +427,16 @@ public:
 
     char gameWindowText[0x40];
     char gameDescriptionText[0x100];
-    const char *gameVersion  = "1.3.0";
+    const char *gameVersion  = "1.3.1";
     const char *gamePlatform = nullptr;
+
+    int gameTypeID       = 0;
+    const char *releaseType = "USE_STANDALONE";
 
 #if RETRO_RENDERTYPE == RETRO_SW_RENDER
     const char *gameRenderType = "SW_RENDERING";
 #elif RETRO_RENDERTYPE == RETRO_HW_RENDER
-    const char *gameRenderType    = "HW_RENDERING";
+    const char *gameRenderType = "HW_RENDERING";
 #endif
 
 #if RETRO_USE_HAPTICS
@@ -418,6 +449,7 @@ public:
     byte gameType = GAME_UNKNOWN;
 #if RETRO_USE_MOD_LOADER
     bool modMenuCalled = false;
+    bool forceSonic1   = false;
 #endif
 #endif
 
@@ -461,8 +493,8 @@ public:
 
 #if RETRO_USING_OPENGL
     SDL_GLContext glContext; // OpenGL context
-#endif                       // RETRO_USING_OPENGL
-#endif                       // RETRO_USING_SDL2
+#endif // RETRO_USING_OPENGL
+#endif // RETRO_USING_SDL2
 
 #if RETRO_USING_SDL1
     SDL_Surface *windowSurface = nullptr;

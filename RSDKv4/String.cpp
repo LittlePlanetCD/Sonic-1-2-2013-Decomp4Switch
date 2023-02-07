@@ -67,9 +67,9 @@ ushort stringStorage[STRSTORAGE_SIZE * STRING_SIZE];
 int stringStorePos = 0;
 
 int creditsListSize = 0;
-ushort *strCreditsList[CREDITS_LIST_SIZE];
-byte creditsType[CREDITS_LIST_SIZE];
-float creditsAdvanceY[CREDITS_LIST_SIZE];
+ushort *strCreditsList[CREDITS_LIST_COUNT];
+byte creditsType[CREDITS_LIST_COUNT];
+float creditsAdvanceY[CREDITS_LIST_COUNT];
 
 // From here: https://rosettacode.org/wiki/MD5#C
 
@@ -252,10 +252,7 @@ int FindStringTokenUnicode(const ushort *string, const ushort *token, char stopI
     return -1;
 }
 
-void ConvertIntegerToString(char *text, int value)
-{
-    sprintf(text, "%d", value); // Vary lazy ik
-}
+void ConvertIntegerToString(char *text, int value) { sprintf(text, "%d", value); }
 
 // Buffer is expected to be at least 16 bytes long
 void GenerateMD5FromString(const char *string, int len, byte *buffer)
@@ -476,7 +473,7 @@ ushort *ReadLocalizedString(const char *stringName, const char *language, const 
         CloseFile();
     }
 
-    printLog("Failed to load string... (%s, %s)", language, stringName);
+    PrintLog("Failed to load string... (%s, %s)", language, stringName);
     return NULL;
 }
 
@@ -489,7 +486,7 @@ void ReadCreditsList(const char *filePath)
         char dest[0x100];
         float advance = 24.0;
         if (!ReachedEndOfFile()) {
-            while (creditsListSize < CREDITS_LIST_SIZE) {
+            while (creditsListSize < CREDITS_LIST_COUNT) {
                 ReadCreditsLine(dest);
 
                 if (dest[0] != '[' || dest[2] != ']') {

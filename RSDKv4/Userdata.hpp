@@ -5,15 +5,15 @@
 
 #define GLOBALVAR_COUNT (0x100)
 
-#define ACHIEVEMENT_MAX (0x40)
-#define LEADERBOARD_MAX (0x80)
+#define ACHIEVEMENT_COUNT (0x40)
+#define LEADERBOARD_COUNT (0x80)
 
-#define SAVEDATA_MAX (0x2000)
+#define SAVEDATA_SIZE (0x2000)
 
 #if RETRO_USE_MOD_LOADER
-#define NATIIVEFUNCTION_MAX (0x30)
+#define NATIIVEFUNCTION_COUNT (0x30)
 #else
-#define NATIIVEFUNCTION_MAX (0x10)
+#define NATIIVEFUNCTION_COUNT (0x10)
 #endif
 
 #define intToVoid(x) (void *)(size_t)(x)
@@ -68,8 +68,14 @@ struct LeaderboardEntry {
     int score;
 };
 
+#ifndef NETWORKING_H
+struct MultiplayerData {
+    int type;
+    int data[0x1FF];
+};
+#endif
 
-extern void *nativeFunction[NATIIVEFUNCTION_MAX];
+extern void *nativeFunction[NATIIVEFUNCTION_COUNT];
 extern int nativeFunctionCount;
 
 extern int globalVariablesCount;
@@ -77,10 +83,10 @@ extern int globalVariables[GLOBALVAR_COUNT];
 extern char globalVariableNames[GLOBALVAR_COUNT][0x20];
 
 extern char gamePath[0x100];
-extern int saveRAM[SAVEDATA_MAX];
-extern Achievement achievements[ACHIEVEMENT_MAX];
+extern int saveRAM[SAVEDATA_SIZE];
+extern Achievement achievements[ACHIEVEMENT_COUNT];
 extern int achievementCount;
-extern LeaderboardEntry leaderboards[LEADERBOARD_MAX];
+extern LeaderboardEntry leaderboards[LEADERBOARD_COUNT];
 
 extern MultiplayerData multiplayerDataIN;
 extern MultiplayerData multiplayerDataOUT;
@@ -101,8 +107,8 @@ extern bool forceUseScripts;
 extern bool forceUseScripts_Config;
 extern bool skipStartMenu;
 extern bool skipStartMenu_Config;
-extern bool disableFocusPause;
-extern bool disableFocusPause_Config;
+extern int disableFocusPause;
+extern int disableFocusPause_Config;
 #endif
 
 inline int GetGlobalVariableByName(const char *name)
@@ -133,7 +139,7 @@ inline int GetGlobalVariableID(const char *name)
 }
 
 #define AddNativeFunction(name, funcPtr)                                                                                                             \
-    if (nativeFunctionCount < NATIIVEFUNCTION_MAX) {                                                                                                 \
+    if (nativeFunctionCount < NATIIVEFUNCTION_COUNT) {                                                                                               \
         SetGlobalVariableByName(name, nativeFunctionCount);                                                                                          \
         nativeFunction[nativeFunctionCount++] = (void *)funcPtr;                                                                                     \
     }
@@ -144,15 +150,13 @@ bool WriteSaveRAMData();
 
 #if !RETRO_USE_ORIGINAL_CODE
 void InitUserdata();
-void writeSettings();
+void WriteSettings();
 void ReadUserdata();
 void WriteUserdata();
-#endif
 
-#if !RETRO_USE_ORIGINAL_CODE
 inline void AddAchievement(const char *name, const char *description)
 {
-    if (achievementCount < ACHIEVEMENT_MAX) {
+    if (achievementCount < ACHIEVEMENT_COUNT) {
         StrCopy(achievements[achievementCount].name, name);
         StrCopy(achievements[achievementCount].desc, description);
         achievementCount++;
@@ -163,7 +167,7 @@ void SetAchievement(int *achievementID, int *status);
 void AwardAchievement(int id, int status);
 #if RETRO_USE_MOD_LOADER
 void AddGameAchievement(int *unused, const char *name);
-void SetAchievementDescription(int *id, const char *desc);
+void SetAchievementDescription(uint *id, const char *desc);
 void ClearAchievements();
 void GetAchievementCount();
 void GetAchievementName(uint *id, int *textMenu);
@@ -176,6 +180,7 @@ inline void LoadAchievementsMenu()
     ReadUserdata();
 #endif
 }
+
 void ShowAchievementsScreen();
 
 int SetLeaderboard(int *leaderboardID, int *result);
@@ -195,22 +200,36 @@ void ReceiveEntity(int *entityID, int *incrementPos);
 void ReceiveValue(int *value, int *incrementPos);
 void TransmitGlobal(int *globalValue, const char *globalName);
 
-void receive2PVSData(MultiplayerData *data);
-void receive2PVSMatchCode(int code);
+void Receive2PVSData(MultiplayerData *data);
+void Receive2PVSMatchCode(int code);
 
 void ShowPromoPopup(int *id, const char *popupName);
 void ShowSegaIDPopup();
 void ShowOnlineSignIn();
 void ShowWebsite(int websiteID);
 
+#if RETRO_REV03
+void NotifyCallback(int *callback, int *param1, int *param2, int *param3);
+#endif
+
 void ExitGame();
 void FileExists(int *unused, const char *filePath);
 
 #if RETRO_USE_MOD_LOADER
+void GetScreenWidth();
 void SetScreenWidth(int *width, int *unused);
+void GetWindowScale();
 void SetWindowScale(int *scale, int *unused);
+void GetWindowScaleMode();
+void SetWindowScaleMode(int *mode, int *unused);
+void GetWindowFullScreen();
 void SetWindowFullScreen(int *fullscreen, int *unused);
+void GetWindowBorderless();
 void SetWindowBorderless(int *borderless, int *unused);
+void GetWindowVSync();
+void SetWindowVSync(int *enabled, int *unused);
+void ApplyWindowChanges();
+
 #endif
 
 #endif //! USERDATA_H

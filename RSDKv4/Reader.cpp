@@ -27,11 +27,12 @@ bool CheckRSDKFile(const char *filePath)
     FileInfo info;
 
     char filePathBuffer[0x100];
-    sprintf(filePathBuffer, "%s", filePath);
 #if RETRO_PLATFORM == RETRO_OSX
     char pathBuf[0x100];
-    sprintf(pathBuf, "%s/%s", gamePath, filePathBuffer);
+    sprintf(pathBuf, "%s/%s", gamePath, filePath);
     sprintf(filePathBuffer, "%s", pathBuf);
+#else
+    sprintf(filePathBuffer, "%s", filePath);
 #endif
 
     cFileHandle = fOpen(filePathBuffer, "rb");
@@ -45,6 +46,9 @@ bool CheckRSDKFile(const char *filePath)
         }
 
         Engine.usingDataFile = true;
+#if !RETRO_USE_ORIGINAL_CODE
+        Engine.usingDataFile_Config = true;
+#endif
 
         StrCopy(rsdkContainer.packNames[rsdkContainer.packCount], filePathBuffer);
 
@@ -75,20 +79,23 @@ bool CheckRSDKFile(const char *filePath)
             Engine.usingBytecode = true;
             CloseFile();
         }
-        printLog("loaded datapack '%s'", filePathBuffer);
+        PrintLog("loaded datapack '%s'", filePathBuffer);
 
         rsdkContainer.packCount++;
         return true;
     }
     else {
         Engine.usingDataFile = false;
-        cFileHandle          = NULL;
+#if !RETRO_USE_ORIGINAL_CODE
+        Engine.usingDataFile_Config = false;
+#endif
+        cFileHandle = NULL;
 
         if (LoadFile("Bytecode/GlobalCode.bin", &info)) {
             Engine.usingBytecode = true;
             CloseFile();
         }
-        printLog("Couldn't load datapack '%s'", filePathBuffer);
+        PrintLog("Couldn't load datapack '%s'", filePathBuffer);
         return false;
     }
 }
@@ -118,6 +125,13 @@ int CheckFileInfo(const char *filepath)
         return f;
     }
     return -1;
+}
+
+inline bool ends_with(std::string const &value, std::string const &ending)
+{
+    if (ending.size() > value.size())
+        return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 #endif
 
@@ -158,6 +172,18 @@ bool LoadFile(const char *filePath, FileInfo *fileInfo)
                     break;
                 }
             }
+        }
+    }
+
+    if (forceUseScripts && !forceFolder) {
+        if (std::string(filePathBuf).rfind("Data/Scripts/", 0) == 0 && ends_with(std::string(filePathBuf), "txt")) {
+            // is a script, since those dont exist normally, load them from "scripts/"
+            forceFolder   = true;
+            Engine.usingDataFile = false;
+            addPath              = true;
+            std::string fStr     = std::string(filePathBuf);
+            fStr.erase(fStr.begin(), fStr.begin() + 5); // remove "Data/"
+            StrCopy(filePathBuf, fStr.c_str());
         }
     }
 #endif
@@ -237,7 +263,7 @@ bool LoadFile(const char *filePath, FileInfo *fileInfo)
                 fileInfo->useEncryption     = useEncryption;
                 fileInfo->packID            = packID;
                 fileInfo->usingDataPack     = true;
-                printLog("Loaded Data File '%s'", filePath);
+                PrintLog("Loaded Data File '%s'", filePath);
 
 #if !RETRO_USE_ORIGINAL_CODE
                 Engine.usingDataFile = true;
@@ -249,7 +275,7 @@ bool LoadFile(const char *filePath, FileInfo *fileInfo)
                 break;
             }
         }
-        printLog("Couldn't load file '%s'", filePath);
+        PrintLog("Couldn't load file '%s'", filePath);
         return false;
     }
     else {
@@ -258,7 +284,7 @@ bool LoadFile(const char *filePath, FileInfo *fileInfo)
 
         cFileHandle = fOpen(fileInfo->fileName, "rb");
         if (!cFileHandle) {
-            printLog("Couldn't load file '%s'", filePath);
+            PrintLog("Couldn't load file '%s'", filePath);
             return false;
         }
         virtualFileOffset = 0;
@@ -278,7 +304,7 @@ bool LoadFile(const char *filePath, FileInfo *fileInfo)
         Engine.usingDataFile = false;
 #endif
 
-        printLog("Loaded File '%s'", filePath);
+        PrintLog("Loaded File '%s'", filePath);
         return true;
     }
 }
@@ -478,7 +504,7 @@ void SetFileInfo(FileInfo *fileInfo)
 #else
     if (Engine.usingDataFile) {
 #endif
-        cFileHandle       = fOpen(rsdkContainer.packNames[fileInfo->packID], "rb");
+        cFileHandle = fOpen(rsdkContainer.packNames[fileInfo->packID], "rb");
         if (cFileHandle) {
             virtualFileOffset = fileInfo->virtualFileOffset;
             vFileSize         = fileInfo->vfileSize;

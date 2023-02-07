@@ -1,7 +1,7 @@
 #include "RetroEngine.hpp"
 
-InputData inputPress = InputData();
-InputData inputDown  = InputData();
+InputData keyPress = InputData();
+InputData keyDown  = InputData();
 
 int touchDown[8];
 int touchX[8];
@@ -17,9 +17,8 @@ int hapticEffectNum = -2;
 #include <algorithm>
 #include <vector>
 
-InputButton inputDevice[INPUT_MAX];
+InputButton inputDevice[INPUT_BUTTONCOUNT];
 int inputType = 0;
-
 
 // mania deadzone vals lol
 float LSTICK_DEADZONE   = 0.3;
@@ -215,7 +214,7 @@ void controllerInit(byte controllerID)
             return; // we already opened this one!
         }
     }
-    
+
 #if RETRO_USING_SDL2
     SDL_GameController *controller = SDL_GameControllerOpen(controllerID);
     if (controller) {
@@ -224,7 +223,7 @@ void controllerInit(byte controllerID)
         device.devicePtr = controller;
         device.hapticPtr = SDL_HapticOpenFromJoystick(SDL_GameControllerGetJoystick(controller));
         if (device.hapticPtr == NULL) {
-            printLog("Could not open controller haptics...\nSDL_GetError() -> %s", SDL_GetError());
+            PrintLog("Could not open controller haptics...\nSDL_GetError() -> %s", SDL_GetError());
         }
         else {
             if (SDL_HapticRumbleInit(device.hapticPtr) < 0) {
@@ -236,7 +235,7 @@ void controllerInit(byte controllerID)
         inputType = 1;
     }
     else {
-        printLog("Could not open controller...\nSDL_GetError() -> %s", SDL_GetError());
+        PrintLog("Could not open controller...\nSDL_GetError() -> %s", SDL_GetError());
     }
 #endif
 }
@@ -274,7 +273,11 @@ void InitInputDevices()
     // just gonna override the mapping and be done with it
     SDL_GameControllerAddMapping("53776974636820436f6e74726f6c6c65,Switch Controller,a:b0,b:b1,back:b11,dpdown:b15,dpleft:b12,dpright:b14,dpup:b13,leftshoulder:b6,leftstick:b4,lefttrigger:b8,leftx:a0,lefty:a1,rightshoulder:b7,rightstick:b5,righttrigger:b9,rightx:a2,righty:a3,start:b10,x:b3,y:b2,");
 #endif
-    printLog("Initializing gamepads...");
+    PrintLog("Initializing gamepads...");
+
+    // fix for issue #334 on github, not sure what's going wrong, but it seems to not be initializing the gamepad api maybe?
+    SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
+
     int joyStickCount = SDL_NumJoysticks();
     controllers.clear();
     int gamepadCount = 0;
@@ -284,7 +287,7 @@ void InitInputDevices()
         if (SDL_IsGameController(i))
             gamepadCount++;
 
-    printLog("Found %d gamepads!", gamepadCount);
+    PrintLog("Found %d gamepads!", gamepadCount);
     for (int i = 0; i < gamepadCount; i++) {
         SDL_GameController *gamepad = SDL_GameControllerOpen(i);
         InputDevice device;
@@ -294,7 +297,7 @@ void InitInputDevices()
         if (SDL_GameControllerGetAttached(gamepad))
             controllers.push_back(device);
         else
-            printLog("InitInputDevices() error -> %s", SDL_GetError());
+            PrintLog("InitInputDevices() error -> %s", SDL_GetError());
     }
 
     if (gamepadCount > 0)
@@ -345,7 +348,7 @@ void ProcessInput()
     }
 
     bool isPressed = false;
-    for (int i = 0; i < INPUT_MAX; i++) {
+    for (int i = 0; i < INPUT_BUTTONCOUNT; i++) {
         if (keyState[inputDevice[i].keyMappings]) {
             isPressed = true;
             break;
@@ -371,7 +374,7 @@ void ProcessInput()
     if (inputDevice[INPUT_ANY].press || inputDevice[INPUT_ANY].hold || touches > 1) {
         Engine.dimTimer = 0;
     }
-    else if (Engine.dimTimer < Engine.dimLimit) {
+    else if (Engine.dimTimer < Engine.dimLimit && !Engine.masterPaused) {
         ++Engine.dimTimer;
     }
 
@@ -380,7 +383,7 @@ void ProcessInput()
         int mx = 0, my = 0;
         SDL_GetMouseState(&mx, &my);
 
-        if ((mx == lastMouseX && my == lastMouseY)) {
+        if (mx == lastMouseX && my == lastMouseY) {
             ++mouseHideTimer;
             if (mouseHideTimer == 120) {
                 SDL_ShowCursor(false);
@@ -420,7 +423,7 @@ void ProcessInput()
     }
 
     if (inputType == 0) {
-        for (int i = 0; i < INPUT_MAX; i++) {
+        for (int i = 0; i < INPUT_BUTTONCOUNT; i++) {
             if (keyState[inputDevice[i].keyMappings]) {
                 inputDevice[i].setHeld();
                 inputDevice[INPUT_ANY].setHeld();
@@ -431,7 +434,7 @@ void ProcessInput()
         }
     }
     else if (inputType == 1 && controller) {
-        for (int i = 0; i < INPUT_MAX; i++) {
+        for (int i = 0; i < INPUT_BUTTONCOUNT; i++) {
             if (SDL_JoystickGetButton(controller, inputDevice[i].contMappings)) {
                 inputDevice[i].setHeld();
                 inputDevice[INPUT_ANY].setHeld();
@@ -443,7 +446,7 @@ void ProcessInput()
     }
 
     bool isPressed = false;
-    for (int i = 0; i < INPUT_MAX; i++) {
+    for (int i = 0; i < INPUT_BUTTONCOUNT; i++) {
         if (keyState[inputDevice[i].keyMappings]) {
             isPressed = true;
             break;
@@ -487,6 +490,11 @@ void CheckKeyPress(InputData *input)
     input->R      = inputDevice[INPUT_BUTTONR].press;
     input->start  = inputDevice[INPUT_START].press;
     input->select = inputDevice[INPUT_SELECT].press;
+#endif
+
+#if RETRO_REV03
+    SetGlobalVariableByName("input.pressButton", input->A || input->B || input->C || input->X || input->Y || input->Z || input->L || input->R
+                                                     || input->start || input->select);
 #endif
 }
 
@@ -541,7 +549,7 @@ int CheckTouchRectMatrix(void *m, float x, float y, float w, float h)
 #if RETRO_USE_HAPTICS
 void HapticEffect(int *hapticID, int *a2, int *a3, int *a4)
 {
-    if (Engine.hapticsEnabled) 
+    if (Engine.hapticsEnabled)
         hapticEffectNum = *hapticID;
 }
 #endif

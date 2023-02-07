@@ -10,23 +10,24 @@ int collisionTolerance = 0;
 CollisionSensor sensors[RETRO_REV00 ? 6 : 7];
 
 #if !RETRO_USE_ORIGINAL_CODE
-bool showHitboxes = false;
+byte showHitboxes = 0;
 
 int debugHitboxCount = 0;
-DebugHitboxInfo debugHitboxList[DEBUG_HITBOX_MAX];
+DebugHitboxInfo debugHitboxList[DEBUG_HITBOX_COUNT];
 
-int addDebugHitbox(byte type, Entity *entity, int left, int top, int right, int bottom)
+int AddDebugHitbox(byte type, Entity *entity, int left, int top, int right, int bottom)
 {
     int i = 0;
     for (; i < debugHitboxCount; ++i) {
         if (debugHitboxList[i].left == left && debugHitboxList[i].top == top && debugHitboxList[i].right == right
-            && debugHitboxList[i].bottom == bottom && debugHitboxList[i].xpos == entity->xpos && debugHitboxList[i].ypos == entity->ypos
-            && debugHitboxList[i].entity == entity) {
+            && debugHitboxList[i].bottom == bottom
+            && (entity && debugHitboxList[i].xpos == entity->xpos && debugHitboxList[i].ypos == entity->ypos
+                && debugHitboxList[i].entity == entity)) {
             return i;
         }
     }
 
-    if (i < DEBUG_HITBOX_MAX) {
+    if (i < DEBUG_HITBOX_COUNT) {
         debugHitboxList[i].type      = type;
         debugHitboxList[i].entity    = entity;
         debugHitboxList[i].collision = 0;
@@ -34,8 +35,8 @@ int addDebugHitbox(byte type, Entity *entity, int left, int top, int right, int 
         debugHitboxList[i].top       = top;
         debugHitboxList[i].right     = right;
         debugHitboxList[i].bottom    = bottom;
-        debugHitboxList[i].xpos      = entity->xpos;
-        debugHitboxList[i].ypos      = entity->ypos;
+        debugHitboxList[i].xpos      = entity ? entity->xpos : 0;
+        debugHitboxList[i].ypos      = entity ? entity->ypos : 0;
 
         int id = debugHitboxCount;
         debugHitboxCount++;
@@ -46,7 +47,7 @@ int addDebugHitbox(byte type, Entity *entity, int left, int top, int right, int 
 }
 #endif
 
-inline Hitbox *getHitbox(Entity *entity)
+inline Hitbox *GetHitbox(Entity *entity)
 {
     AnimationFile *thisAnim = objectScriptList[entity->type].animFile;
     return &hitboxList[thisAnim->hitboxListOffset
@@ -710,7 +711,7 @@ void RWallCollision(Entity *player, CollisionSensor *sensor)
 
 void ProcessAirCollision(Entity *entity)
 {
-    Hitbox *playerHitbox = getHitbox(entity);
+    Hitbox *playerHitbox = GetHitbox(entity);
     collisionLeft        = playerHitbox->left[0];
     collisionTop         = playerHitbox->top[0];
     collisionRight       = playerHitbox->right[0];
@@ -1025,13 +1026,13 @@ void ProcessPathGrip(Entity *entity)
 
     while (checkDist > -1) {
         if (checkDist >= 1) {
-            cosValue256 = cosVal256[entity->angle] << 10;
-            sinValue256 = sinVal256[entity->angle] << 10;
+            cosValue256 = cos256LookupTable[entity->angle] << 10;
+            sinValue256 = sin256LookupTable[entity->angle] << 10;
             checkDist--;
         }
         else {
-            cosValue256 = absSpeed * cosVal256[entity->angle] >> 8;
-            sinValue256 = absSpeed * sinVal256[entity->angle] >> 8;
+            cosValue256 = absSpeed * cos256LookupTable[entity->angle] >> 8;
+            sinValue256 = absSpeed * sin256LookupTable[entity->angle] >> 8;
             checkDist   = -1;
         }
 
@@ -1303,7 +1304,7 @@ void ProcessPathGrip(Entity *entity)
                 entity->floorSensors[0] = sensors[0].collided;
                 entity->floorSensors[1] = sensors[1].collided;
                 entity->floorSensors[2] = sensors[2].collided;
-#if RETRO_REV00
+#if !RETRO_REV00
                 entity->floorSensors[3] = sensors[5].collided;
                 entity->floorSensors[4] = sensors[6].collided;
 #endif
@@ -1327,8 +1328,8 @@ void ProcessPathGrip(Entity *entity)
             else {
                 entity->gravity       = 1;
                 entity->collisionMode = CMODE_FLOOR;
-                entity->xvel          = cosVal256[entity->angle] * entity->speed >> 8;
-                entity->yvel          = sinVal256[entity->angle] * entity->speed >> 8;
+                entity->xvel          = cos256LookupTable[entity->angle] * entity->speed >> 8;
+                entity->yvel          = sin256LookupTable[entity->angle] * entity->speed >> 8;
                 if (entity->yvel < -0x100000)
                     entity->yvel = -0x100000;
 
@@ -1359,8 +1360,8 @@ void ProcessPathGrip(Entity *entity)
             if (!sensors[0].collided && !sensors[1].collided && !sensors[2].collided) {
                 entity->gravity       = 1;
                 entity->collisionMode = CMODE_FLOOR;
-                entity->xvel          = cosVal256[entity->angle] * entity->speed >> 8;
-                entity->yvel          = sinVal256[entity->angle] * entity->speed >> 8;
+                entity->xvel          = cos256LookupTable[entity->angle] * entity->speed >> 8;
+                entity->yvel          = sin256LookupTable[entity->angle] * entity->speed >> 8;
                 if (entity->yvel < -0x100000) {
                     entity->yvel = -0x100000;
                 }
@@ -1400,8 +1401,8 @@ void ProcessPathGrip(Entity *entity)
             if (!sensors[0].collided && !sensors[1].collided && !sensors[2].collided) {
                 entity->gravity         = 1;
                 entity->collisionMode   = CMODE_FLOOR;
-                entity->xvel            = cosVal256[entity->angle] * entity->speed >> 8;
-                entity->yvel            = sinVal256[entity->angle] * entity->speed >> 8;
+                entity->xvel            = cos256LookupTable[entity->angle] * entity->speed >> 8;
+                entity->yvel            = sin256LookupTable[entity->angle] * entity->speed >> 8;
                 entity->floorSensors[0] = false;
                 entity->floorSensors[1] = false;
                 entity->floorSensors[2] = false;
@@ -1468,8 +1469,8 @@ void ProcessPathGrip(Entity *entity)
             if (!sensors[0].collided && !sensors[1].collided && !sensors[2].collided) {
                 entity->gravity       = 1;
                 entity->collisionMode = CMODE_FLOOR;
-                entity->xvel          = cosVal256[entity->angle] * entity->speed >> 8;
-                entity->yvel          = sinVal256[entity->angle] * entity->speed >> 8;
+                entity->xvel          = cos256LookupTable[entity->angle] * entity->speed >> 8;
+                entity->yvel          = sin256LookupTable[entity->angle] * entity->speed >> 8;
                 if (entity->yvel < -0x100000)
                     entity->yvel = -0x100000;
 
@@ -1511,7 +1512,7 @@ void ProcessPathGrip(Entity *entity)
 
 void SetPathGripSensors(Entity *player)
 {
-    Hitbox *playerHitbox = getHitbox(player);
+    Hitbox *playerHitbox = GetHitbox(player);
 
     switch (player->collisionMode) {
         case CMODE_FLOOR: {
@@ -1616,7 +1617,7 @@ void ProcessTileCollisions(Entity *player)
     player->floorSensors[3] = false;
     player->floorSensors[4] = false;
 #endif
-    scriptEng.checkResult   = false;
+    scriptEng.checkResult = false;
 
     collisionTolerance = 15;
     if (player->speed < 0x60000)
@@ -1928,6 +1929,7 @@ void ObjectFloorGrip(int xOffset, int yOffset, int cPath)
         }
         YPos += 16;
     }
+
     if (scriptEng.checkResult) {
         if (abs(entity->ypos - chunkX) < 16) {
             entity->ypos = (entity->ypos - yOffset) << 16;
@@ -2148,39 +2150,39 @@ void ObjectRWallGrip(int xOffset, int yOffset, int cPath)
 void TouchCollision(Entity *thisEntity, int thisLeft, int thisTop, int thisRight, int thisBottom, Entity *otherEntity, int otherLeft, int otherTop,
                     int otherRight, int otherBottom)
 {
-    Hitbox *thisHitbox  = getHitbox(thisEntity);
-    Hitbox *otherHitbox = getHitbox(otherEntity);
+    Hitbox *thisHitbox  = GetHitbox(thisEntity);
+    Hitbox *otherHitbox = GetHitbox(otherEntity);
 
-    if (thisLeft == 0x10000)
+    if (thisLeft == C_BOX)
         thisLeft = thisHitbox->left[0];
 
-    if (thisTop == 0x10000)
+    if (thisTop == C_BOX)
         thisTop = thisHitbox->top[0];
 
-    if (thisRight == 0x10000)
+    if (thisRight == C_BOX)
         thisRight = thisHitbox->right[0];
 
-    if (thisBottom == 0x10000)
+    if (thisBottom == C_BOX)
         thisBottom = thisHitbox->bottom[0];
 
-    if (otherLeft == 0x10000)
+    if (otherLeft == C_BOX)
         otherLeft = otherHitbox->left[0];
 
-    if (otherTop == 0x10000)
+    if (otherTop == C_BOX)
         otherTop = otherHitbox->top[0];
 
-    if (otherRight == 0x10000)
+    if (otherRight == C_BOX)
         otherRight = otherHitbox->right[0];
 
-    if (otherBottom == 0x10000)
+    if (otherBottom == C_BOX)
         otherBottom = otherHitbox->bottom[0];
 
 #if !RETRO_USE_ORIGINAL_CODE
     int thisHitboxID  = 0;
     int otherHitboxID = 0;
     if (showHitboxes) {
-        thisHitboxID  = addDebugHitbox(H_TYPE_TOUCH, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
-        otherHitboxID = addDebugHitbox(H_TYPE_TOUCH, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
+        thisHitboxID  = AddDebugHitbox(H_TYPE_TOUCH, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
+        otherHitboxID = AddDebugHitbox(H_TYPE_TOUCH, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
     }
 #endif
 
@@ -2208,39 +2210,39 @@ void TouchCollision(Entity *thisEntity, int thisLeft, int thisTop, int thisRight
 void BoxCollision(Entity *thisEntity, int thisLeft, int thisTop, int thisRight, int thisBottom, Entity *otherEntity, int otherLeft, int otherTop,
                   int otherRight, int otherBottom)
 {
-    Hitbox *thisHitbox  = getHitbox(thisEntity);
-    Hitbox *otherHitbox = getHitbox(otherEntity);
+    Hitbox *thisHitbox  = GetHitbox(thisEntity);
+    Hitbox *otherHitbox = GetHitbox(otherEntity);
 
-    if (thisLeft == 0x10000)
+    if (thisLeft == C_BOX)
         thisLeft = thisHitbox->left[0];
 
-    if (thisTop == 0x10000)
+    if (thisTop == C_BOX)
         thisTop = thisHitbox->top[0];
 
-    if (thisRight == 0x10000)
+    if (thisRight == C_BOX)
         thisRight = thisHitbox->right[0];
 
-    if (thisBottom == 0x10000)
+    if (thisBottom == C_BOX)
         thisBottom = thisHitbox->bottom[0];
 
-    if (otherLeft == 0x10000)
+    if (otherLeft == C_BOX)
         otherLeft = otherHitbox->left[0];
 
-    if (otherTop == 0x10000)
+    if (otherTop == C_BOX)
         otherTop = otherHitbox->top[0];
 
-    if (otherRight == 0x10000)
+    if (otherRight == C_BOX)
         otherRight = otherHitbox->right[0];
 
-    if (otherBottom == 0x10000)
+    if (otherBottom == C_BOX)
         otherBottom = otherHitbox->bottom[0];
 
 #if !RETRO_USE_ORIGINAL_CODE
     int thisHitboxID  = 0;
     int otherHitboxID = 0;
     if (showHitboxes) {
-        thisHitboxID  = addDebugHitbox(H_TYPE_BOX, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
-        otherHitboxID = addDebugHitbox(H_TYPE_BOX, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
+        thisHitboxID  = AddDebugHitbox(H_TYPE_BOX, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
+        otherHitboxID = AddDebugHitbox(H_TYPE_BOX, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
     }
 #endif
 
@@ -2526,39 +2528,39 @@ void BoxCollision(Entity *thisEntity, int thisLeft, int thisTop, int thisRight, 
 void BoxCollision2(Entity *thisEntity, int thisLeft, int thisTop, int thisRight, int thisBottom, Entity *otherEntity, int otherLeft, int otherTop,
                    int otherRight, int otherBottom)
 {
-    Hitbox *thisHitbox  = getHitbox(thisEntity);
-    Hitbox *otherHitbox = getHitbox(otherEntity);
+    Hitbox *thisHitbox  = GetHitbox(thisEntity);
+    Hitbox *otherHitbox = GetHitbox(otherEntity);
 
-    if (thisLeft == 0x10000)
+    if (thisLeft == C_BOX)
         thisLeft = thisHitbox->left[0];
 
-    if (thisTop == 0x10000)
+    if (thisTop == C_BOX)
         thisTop = thisHitbox->top[0];
 
-    if (thisRight == 0x10000)
+    if (thisRight == C_BOX)
         thisRight = thisHitbox->right[0];
 
-    if (thisBottom == 0x10000)
+    if (thisBottom == C_BOX)
         thisBottom = thisHitbox->bottom[0];
 
-    if (otherLeft == 0x10000)
+    if (otherLeft == C_BOX)
         otherLeft = otherHitbox->left[0];
 
-    if (otherTop == 0x10000)
+    if (otherTop == C_BOX)
         otherTop = otherHitbox->top[0];
 
-    if (otherRight == 0x10000)
+    if (otherRight == C_BOX)
         otherRight = otherHitbox->right[0];
 
-    if (otherBottom == 0x10000)
+    if (otherBottom == C_BOX)
         otherBottom = otherHitbox->bottom[0];
 
 #if !RETRO_USE_ORIGINAL_CODE
     int thisHitboxID  = 0;
     int otherHitboxID = 0;
     if (showHitboxes) {
-        thisHitboxID  = addDebugHitbox(H_TYPE_BOX, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
-        otherHitboxID = addDebugHitbox(H_TYPE_BOX, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
+        thisHitboxID  = AddDebugHitbox(H_TYPE_BOX, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
+        otherHitboxID = AddDebugHitbox(H_TYPE_BOX, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
     }
 #endif
 
@@ -2832,39 +2834,39 @@ void PlatformCollision(Entity *thisEntity, int thisLeft, int thisTop, int thisRi
 {
     scriptEng.checkResult = false;
 
-    Hitbox *thisHitbox  = getHitbox(thisEntity);
-    Hitbox *otherHitbox = getHitbox(otherEntity);
+    Hitbox *thisHitbox  = GetHitbox(thisEntity);
+    Hitbox *otherHitbox = GetHitbox(otherEntity);
 
-    if (thisLeft == 0x10000)
+    if (thisLeft == C_BOX)
         thisLeft = thisHitbox->left[0];
 
-    if (thisTop == 0x10000)
+    if (thisTop == C_BOX)
         thisTop = thisHitbox->top[0];
 
-    if (thisRight == 0x10000)
+    if (thisRight == C_BOX)
         thisRight = thisHitbox->right[0];
 
-    if (thisBottom == 0x10000)
+    if (thisBottom == C_BOX)
         thisBottom = thisHitbox->bottom[0];
 
-    if (otherLeft == 0x10000)
+    if (otherLeft == C_BOX)
         otherLeft = otherHitbox->left[0];
 
-    if (otherTop == 0x10000)
+    if (otherTop == C_BOX)
         otherTop = otherHitbox->top[0];
 
-    if (otherRight == 0x10000)
+    if (otherRight == C_BOX)
         otherRight = otherHitbox->right[0];
 
-    if (otherBottom == 0x10000)
+    if (otherBottom == C_BOX)
         otherBottom = otherHitbox->bottom[0];
 
 #if !RETRO_USE_ORIGINAL_CODE
     int thisHitboxID  = 0;
     int otherHitboxID = 0;
     if (showHitboxes) {
-        thisHitboxID  = addDebugHitbox(H_TYPE_PLAT, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
-        otherHitboxID = addDebugHitbox(H_TYPE_PLAT, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
+        thisHitboxID  = AddDebugHitbox(H_TYPE_PLAT, thisEntity, thisLeft, thisTop, thisRight, thisBottom);
+        otherHitboxID = AddDebugHitbox(H_TYPE_PLAT, otherEntity, otherLeft, otherTop, otherRight, otherBottom);
     }
 #endif
 

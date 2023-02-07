@@ -16,6 +16,16 @@
 
 #define MIX_BUFFER_SAMPLES (256)
 
+#if RETRO_USING_SDL1 || RETRO_USING_SDL2
+
+#define LockAudioDevice()   SDL_LockAudio()
+#define UnlockAudioDevice() SDL_UnlockAudio()
+
+#else
+#define LockAudioDevice()   ;
+#define UnlockAudioDevice() ;
+#endif
+
 struct TrackInfo {
     char fileName[0x40];
     bool trackLoop;
@@ -109,21 +119,23 @@ void ProcessAudioMixing(Sint32 *dst, const Sint16 *src, int len, int volume, sby
 #endif
 
 #if !RETRO_USE_ORIGINAL_CODE
-inline void freeMusInfo()
+inline void FreeMusInfo()
 {
-    SDL_LockAudio();
+    LockAudioDevice();
 
 #if RETRO_USING_SDL2
     if (streamInfo[currentStreamIndex].stream)
         SDL_FreeAudioStream(streamInfo[currentStreamIndex].stream);
     streamInfo[currentStreamIndex].stream = NULL;
 #endif
+
     ov_clear(&streamInfo[currentStreamIndex].vorbisFile);
+
 #if RETRO_USING_SDL2
     streamInfo[currentStreamIndex].stream = nullptr;
 #endif
 
-    SDL_UnlockAudio();
+    UnlockAudioDevice();
 }
 #endif
 #else
@@ -132,7 +144,7 @@ void ProcessAudioPlayback() {}
 void ProcessAudioMixing() {}
 
 #if !RETRO_USE_ORIGINAL_CODE
-inline void freeMusInfo() { ov_clear(&streamInfo[currentStreamIndex].vorbisFile); }
+inline void FreeMusInfo() { ov_clear(&streamInfo[currentStreamIndex].vorbisFile); }
 #endif
 #endif
 
@@ -145,10 +157,11 @@ inline void StopMusic(bool setStatus)
     if (setStatus)
         musicStatus = MUSIC_STOPPED;
     musicPosition = 0;
+
 #if !RETRO_USE_ORIGINAL_CODE
-    SDL_LockAudio();
-    freeMusInfo();
-    SDL_UnlockAudio();
+    LockAudioDevice();
+    FreeMusInfo();
+    UnlockAudioDevice();
 #endif
 }
 
@@ -215,6 +228,7 @@ inline void SetMusicVolume(int volume)
         volume = 0;
     if (volume > MAX_VOLUME)
         volume = MAX_VOLUME;
+
     masterVolume = volume;
 }
 
@@ -252,15 +266,13 @@ inline void ResumeSound()
 inline void StopAllSfx()
 {
 #if !RETRO_USE_ORIGINAL_CODE
-#if RETRO_USING_SDL1 || RETRO_USING_SDL2
-    SDL_LockAudio();
+    LockAudioDevice();
 #endif
-#endif
+
     for (int i = 0; i < CHANNEL_COUNT; ++i) sfxChannels[i].sfxID = -1;
+
 #if !RETRO_USE_ORIGINAL_CODE
-#if RETRO_USING_SDL1 || RETRO_USING_SDL2
-    SDL_UnlockAudio();
-#endif
+    UnlockAudioDevice();
 #endif
 }
 inline void ReleaseGlobalSfx()
@@ -271,11 +283,13 @@ inline void ReleaseGlobalSfx()
             StrCopy(sfxNames[i], "");
             if (sfxList[i].buffer)
                 free(sfxList[i].buffer);
+
             sfxList[i].buffer = NULL;
             sfxList[i].length = 0;
             sfxList[i].loaded = false;
         }
     }
+
     globalSFXCount = 0;
 }
 inline void ReleaseStageSfx()
@@ -286,11 +300,13 @@ inline void ReleaseStageSfx()
             StrCopy(sfxNames[i], "");
             if (sfxList[i].buffer)
                 free(sfxList[i].buffer);
+
             sfxList[i].buffer = NULL;
             sfxList[i].length = 0;
             sfxList[i].loaded = false;
         }
     }
+
     stageSFXCount = 0;
 }
 

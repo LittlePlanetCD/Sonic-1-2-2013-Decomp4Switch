@@ -23,7 +23,7 @@ void LoadAnimationFile(char *filePath)
         sheetIDs[0] = 0;
 
         byte sheetCount = 0;
-        FileRead(&sheetCount, 1); // Sheet Count
+        FileRead(&sheetCount, 1);
 
         for (int s = 0; s < sheetCount; ++s) {
             FileRead(&fileBuffer, 1);
@@ -53,7 +53,7 @@ void LoadAnimationFile(char *filePath)
             FileRead(&anim->frameCount, 1);
             FileRead(&anim->speed, 1);
             FileRead(&anim->loopPoint, 1);
-            FileRead(&anim->rotationFlag, 1);
+            FileRead(&anim->rotationStyle, 1);
 
             for (int j = 0; j < anim->frameCount; ++j) {
                 SpriteFrame *frame = &animFrames[animFrameCount++];
@@ -75,8 +75,9 @@ void LoadAnimationFile(char *filePath)
                 FileRead(&buffer, 1);
                 frame->pivotY = buffer;
             }
+
             // 90 Degree (Extra rotation Frames) rotation
-            if (anim->rotationFlag == ROTFLAG_STATICFRAMES)
+            if (anim->rotationStyle == ROTSTYLE_STATICFRAMES)
                 anim->frameCount >>= 1;
         }
 
@@ -110,8 +111,8 @@ void ClearAnimationData()
     hitboxCount        = 0;
 
     // Used for pause menu
-    LoadGIFFile("Data/Game/SystemText.gif", SURFACE_MAX - 1);
-    StrCopy(gfxSurface[SURFACE_MAX - 1].fileName, "Data/Game/SystemText.gif");
+    LoadGIFFile("Data/Game/SystemText.gif", SURFACE_COUNT - 1);
+    StrCopy(gfxSurface[SURFACE_COUNT - 1].fileName, "Data/Game/SystemText.gif");
 }
 
 AnimationFile *AddAnimationFile(char *filePath)
@@ -120,7 +121,7 @@ AnimationFile *AddAnimationFile(char *filePath)
     StrCopy(path, "Data/Animations/");
     StrAdd(path, filePath);
 
-    for (int a = 0; a < 0x100; ++a) {
+    for (int a = 0; a < ANIFILE_COUNT; ++a) {
         if (StrLength(animationFileList[a].fileName) <= 0) {
             StrCopy(animationFileList[a].fileName, filePath);
             LoadAnimationFile(path);
@@ -147,12 +148,14 @@ void ProcessObjectAnimation(void *objScr, void *ent)
             entity->animationSpeed = 0xF0;
         entity->animationTimer += entity->animationSpeed;
     }
+
     if (entity->animation != entity->prevAnimation) {
         entity->prevAnimation  = entity->animation;
         entity->frame          = 0;
         entity->animationTimer = 0;
         entity->animationSpeed = 0;
     }
+
     if (entity->animationTimer >= 0xF0) {
         entity->animationTimer -= 0xF0;
         ++entity->frame;

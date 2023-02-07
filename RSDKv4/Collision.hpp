@@ -1,7 +1,7 @@
 #ifndef COLLISION_H
 #define COLLISION_H
 
-enum CollisionSidess {
+enum CollisionSides {
     CSIDE_FLOOR = 0,
     CSIDE_LWALL = 1,
     CSIDE_RWALL = 2,
@@ -25,9 +25,13 @@ enum CollisionSolidity {
 
 enum ObjectCollisionTypes {
     C_TOUCH    = 0,
-    C_BOX      = 1,
-    C_BOX2     = 2,
+    C_SOLID    = 1,
+    C_SOLID2   = 2,
     C_PLATFORM = 3,
+};
+
+enum ObjectCollisionFlags {
+    C_BOX = 0x10000,
 };
 
 struct CollisionSensor {
@@ -38,7 +42,7 @@ struct CollisionSensor {
 };
 
 #if !RETRO_USE_ORIGINAL_CODE
-#define DEBUG_HITBOX_MAX (0x400)
+#define DEBUG_HITBOX_COUNT (0x400)
 
 struct DebugHitboxInfo {
     byte type;
@@ -52,13 +56,13 @@ struct DebugHitboxInfo {
     Entity *entity;
 };
 
-enum DebugHitboxTypes { H_TYPE_TOUCH, H_TYPE_BOX, H_TYPE_PLAT };
+enum DebugHitboxTypes { H_TYPE_TOUCH, H_TYPE_BOX, H_TYPE_PLAT, H_TYPE_FINGER };
 
-extern bool showHitboxes;
+extern byte showHitboxes;
 extern int debugHitboxCount;
-extern DebugHitboxInfo debugHitboxList[DEBUG_HITBOX_MAX];
+extern DebugHitboxInfo debugHitboxList[DEBUG_HITBOX_COUNT];
 
-int addDebugHitbox(byte type, Entity *entity, int left, int top, int right, int bottom);
+int AddDebugHitbox(byte type, Entity *entity, int left, int top, int right, int bottom);
 #endif
 
 extern int collisionLeft;

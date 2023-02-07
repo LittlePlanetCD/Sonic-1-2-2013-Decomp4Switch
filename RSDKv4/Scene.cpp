@@ -12,7 +12,7 @@ SceneInfo stageList[STAGELIST_MAX][0x100];
 int stageMode = STAGEMODE_LOAD;
 
 int cameraTarget   = -1;
-int cameraStyle    = 0;
+int cameraStyle    = CAMERASTYLE_FOLLOW;
 int cameraEnabled  = 0;
 int cameraAdjustY  = 0;
 int xScrollOffset  = 0;
@@ -77,11 +77,11 @@ CollisionMasks collisionMasks[2];
 
 byte tilesetGFXData[TILESET_SIZE];
 
-ushort tile3DFloorBuffer[0x13334];
+ushort tile3DFloorBuffer[0x100 * 0x100];
 bool drawStageGFXHQ = false;
 
-bool loadGlobalScripts = false; // stored here so I can use it later
 #if RETRO_USE_MOD_LOADER
+bool loadGlobalScripts = false; // stored here so I can use it later
 int globalObjCount     = 0;
 #endif
 
@@ -139,7 +139,7 @@ void ProcessStage(void)
             cameraEnabled                = true;
             cameraTarget                 = -1;
             cameraShift                  = 0;
-            cameraStyle                  = 0;
+            cameraStyle                  = CAMERASTYLE_FOLLOW;
             cameraXPos                   = 0;
             cameraYPos                   = 0;
             cameraLockedY                = 0;
@@ -159,7 +159,7 @@ void ProcessStage(void)
             stageMode                    = STAGEMODE_NORMAL;
 
 #if RETRO_USE_MOD_LOADER
-            for (int m = 0; m < modList.size(); ++m) scanModFolder(&modList[m]);
+            for (int m = 0; m < modList.size(); ++m) ScanModFolder(&modList[m]);
 #endif
             ResetBackgroundSettings();
             LoadStageFiles();
@@ -206,6 +206,7 @@ void ProcessStage(void)
             gfxVertexSizeOpaque = 0;
 #endif
             break;
+
         case STAGEMODE_NORMAL:
             drawStageGFXHQ = false;
             if (fadeMode > 0)
@@ -213,9 +214,9 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
-            if (pauseEnabled && inputPress.start) {
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_NORMAL_STEP;
                 PauseSound();
             }
@@ -241,11 +242,11 @@ void ProcessStage(void)
             if (cameraTarget > -1) {
                 if (cameraEnabled == 1) {
                     switch (cameraStyle) {
-                        case 0: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
-                        case 1:
-                        case 2:
-                        case 3: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
-                        case 4: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
+                        case CAMERASTYLE_FOLLOW: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
+                        case CAMERASTYLE_EXTENDED:
+                        case CAMERASTYLE_EXTENDED_OFFSET_L:
+                        case CAMERASTYLE_EXTENDED_OFFSET_R: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
+                        case CAMERASTYLE_HLOCKED: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
                         default: break;
                     }
                 }
@@ -257,6 +258,7 @@ void ProcessStage(void)
             ProcessParallaxAutoScroll();
             DrawStageGFX();
             break;
+
         case STAGEMODE_PAUSED:
             drawStageGFXHQ = false;
             if (fadeMode > 0)
@@ -264,10 +266,10 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
 
-            if (pauseEnabled && inputPress.start) {
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_PAUSED_STEP;
                 PauseSound();
             }
@@ -289,7 +291,12 @@ void ProcessStage(void)
             DrawObjectList(4);
             DrawObjectList(5);
             DrawObjectList(6);
+
+#if !RETRO_USE_ORIGINAL_CODE
+            DrawDebugOverlays();
+#endif
             break;
+
         case STAGEMODE_FROZEN:
             drawStageGFXHQ = false;
             if (fadeMode > 0)
@@ -297,8 +304,8 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
 
             // Update
             ProcessFrozenObjects();
@@ -306,11 +313,11 @@ void ProcessStage(void)
             if (cameraTarget > -1) {
                 if (cameraEnabled == 1) {
                     switch (cameraStyle) {
-                        case 0: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
-                        case 1:
-                        case 2:
-                        case 3: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
-                        case 4: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
+                        case CAMERASTYLE_FOLLOW: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
+                        case CAMERASTYLE_EXTENDED:
+                        case CAMERASTYLE_EXTENDED_OFFSET_L:
+                        case CAMERASTYLE_EXTENDED_OFFSET_R: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
+                        case CAMERASTYLE_HLOCKED: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
                         default: break;
                     }
                 }
@@ -321,6 +328,7 @@ void ProcessStage(void)
 
             DrawStageGFX();
             break;
+
 #if !RETRO_REV00
         case STAGEMODE_2P:
             drawStageGFXHQ = false;
@@ -329,9 +337,9 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
-            if (pauseEnabled && inputPress.start) {
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_2P_STEP;
                 PauseSound();
             }
@@ -358,11 +366,11 @@ void ProcessStage(void)
                 if (cameraTarget > -1) {
                     if (cameraEnabled == 1) {
                         switch (cameraStyle) {
-                            case 0: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
-                            case 1:
-                            case 2:
-                            case 3: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
-                            case 4: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_FOLLOW: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_EXTENDED:
+                            case CAMERASTYLE_EXTENDED_OFFSET_L:
+                            case CAMERASTYLE_EXTENDED_OFFSET_R: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_HLOCKED: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
                             default: break;
                         }
                     }
@@ -376,6 +384,7 @@ void ProcessStage(void)
             DrawStageGFX();
             break;
 #endif
+
         case STAGEMODE_NORMAL_STEP:
             drawStageGFXHQ = false;
             if (fadeMode > 0)
@@ -383,11 +392,11 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
 
-            if (inputPress.C) {
-                inputPress.C = false;
+            if (keyPress.C) {
+                keyPress.C = false;
 
                 if (timeEnabled) {
                     if (++frameCounter == 60) {
@@ -408,11 +417,11 @@ void ProcessStage(void)
                 if (cameraTarget > -1) {
                     if (cameraEnabled == 1) {
                         switch (cameraStyle) {
-                            case 0: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
-                            case 1:
-                            case 2:
-                            case 3: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
-                            case 4: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_FOLLOW: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_EXTENDED:
+                            case CAMERASTYLE_EXTENDED_OFFSET_L:
+                            case CAMERASTYLE_EXTENDED_OFFSET_R: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_HLOCKED: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
                             default: break;
                         }
                     }
@@ -425,11 +434,12 @@ void ProcessStage(void)
                 ProcessParallaxAutoScroll();
             }
 
-            if (pauseEnabled && inputPress.start) {
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_NORMAL;
                 ResumeSound();
             }
             break;
+
         case STAGEMODE_PAUSED_STEP:
             drawStageGFXHQ = false;
             if (fadeMode > 0)
@@ -437,10 +447,10 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
 
-            if (inputPress.C) {
+            if (keyPress.C) {
 #if RETRO_HARDWARE_RENDER
                 gfxIndexSize        = 0;
                 gfxVertexSize       = 0;
@@ -448,7 +458,7 @@ void ProcessStage(void)
                 gfxVertexSizeOpaque = 0;
 #endif
 
-                inputPress.C = false;
+                keyPress.C = false;
                 ProcessPausedObjects();
                 DrawObjectList(0);
                 DrawObjectList(1);
@@ -457,13 +467,18 @@ void ProcessStage(void)
                 DrawObjectList(4);
                 DrawObjectList(5);
                 DrawObjectList(6);
+
+#if !RETRO_USE_ORIGINAL_CODE
+                DrawDebugOverlays();
+#endif
             }
 
-            if (pauseEnabled && inputPress.start) {
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_PAUSED;
                 ResumeSound();
             }
             break;
+
         case STAGEMODE_FROZEN_STEP:
             drawStageGFXHQ = false;
             if (fadeMode > 0)
@@ -471,11 +486,11 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
 
-            if (inputPress.C) {
-                inputPress.C = false;
+            if (keyPress.C) {
+                keyPress.C = false;
 
                 // Update
                 ProcessFrozenObjects();
@@ -483,11 +498,11 @@ void ProcessStage(void)
                 if (cameraTarget > -1) {
                     if (cameraEnabled == 1) {
                         switch (cameraStyle) {
-                            case 0: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
-                            case 1:
-                            case 2:
-                            case 3: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
-                            case 4: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_FOLLOW: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_EXTENDED:
+                            case CAMERASTYLE_EXTENDED_OFFSET_L:
+                            case CAMERASTYLE_EXTENDED_OFFSET_R: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_HLOCKED: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
                             default: break;
                         }
                     }
@@ -498,11 +513,12 @@ void ProcessStage(void)
 
                 DrawStageGFX();
             }
-            if (pauseEnabled && inputPress.start) {
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_FROZEN;
                 ResumeSound();
             }
             break;
+
 #if !RETRO_REV00
         case STAGEMODE_2P_STEP:
             drawStageGFXHQ = false;
@@ -511,10 +527,10 @@ void ProcessStage(void)
 
             lastXSize = -1;
             lastYSize = -1;
-            CheckKeyDown(&inputDown);
-            CheckKeyPress(&inputPress);
-            if (inputPress.C) {
-                inputPress.C = false;
+            CheckKeyDown(&keyDown);
+            CheckKeyPress(&keyPress);
+            if (keyPress.C) {
+                keyPress.C = false;
 
                 if (timeEnabled) {
                     if (++frameCounter == 60) {
@@ -537,11 +553,11 @@ void ProcessStage(void)
                 if (cameraTarget > -1) {
                     if (cameraEnabled == 1) {
                         switch (cameraStyle) {
-                            case 0: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
-                            case 1:
-                            case 2:
-                            case 3: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
-                            case 4: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_FOLLOW: SetPlayerScreenPosition(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_EXTENDED:
+                            case CAMERASTYLE_EXTENDED_OFFSET_L:
+                            case CAMERASTYLE_EXTENDED_OFFSET_R: SetPlayerScreenPositionCDStyle(&objectEntityList[cameraTarget]); break;
+                            case CAMERASTYLE_HLOCKED: SetPlayerHLockedScreenPosition(&objectEntityList[cameraTarget]); break;
                             default: break;
                         }
                     }
@@ -554,7 +570,7 @@ void ProcessStage(void)
                 ProcessParallaxAutoScroll();
             }
 
-            if (pauseEnabled && inputPress.start) {
+            if (pauseEnabled && keyPress.start) {
                 stageMode = STAGEMODE_2P;
                 ResumeSound();
             }
@@ -580,10 +596,10 @@ void LoadStageFiles(void)
 
     StopAllSfx();
     if (!CheckCurrentStageFolder(stageListPosition)) {
-        printLog("Loading Scene %s - %s", stageListNames[activeStageList], stageList[activeStageList][stageListPosition].name);
+        PrintLog("Loading Scene %s - %s", stageListNames[activeStageList], stageList[activeStageList][stageListPosition].name);
         ReleaseStageSfx();
         ClearScriptData();
-        for (int i = SURFACE_MAX; i > 0; i--) RemoveGraphicsFile((char *)"", i - 1);
+        for (int i = SURFACE_COUNT; i > 0; i--) RemoveGraphicsFile((char *)"", i - 1);
 
 #if RETRO_USE_MOD_LOADER
         loadGlobalScripts = false;
@@ -794,7 +810,7 @@ void LoadStageFiles(void)
         LoadStageBackground();
     }
     else {
-        printLog("Reloading Scene %s - %s", stageListNames[activeStageList], stageList[activeStageList][stageListPosition].name);
+        PrintLog("Reloading Scene %s - %s", stageListNames[activeStageList], stageList[activeStageList][stageListPosition].name);
     }
     LoadStageChunks();
     for (int i = 0; i < TRACK_COUNT; ++i) SetMusicTrack("", i, false, 0);
@@ -872,7 +888,7 @@ void LoadActLayout()
         newXBoundary2 = stageLayouts[0].xsize << 7;
         newYBoundary2 = stageLayouts[0].ysize << 7;
 
-        memset(stageLayouts[0].tiles, 0, TILELAYER_CHUNK_MAX * sizeof(ushort));
+        memset(stageLayouts[0].tiles, 0, TILELAYER_CHUNK_COUNT * sizeof(ushort));
         memset(stageLayouts[0].lineScroll, 0, 0x7FFF);
 
         for (int y = 0; y < stageLayouts[0].ysize; ++y) {
@@ -890,7 +906,7 @@ void LoadActLayout()
         int objectCount = fileBuffer[0] + (fileBuffer[1] << 8);
 #if !RETRO_USE_ORIGINAL_CODE
         if (objectCount > 0x400)
-            printLog("WARNING: object count %d exceeds the object limit", objectCount);
+            PrintLog("WARNING: object count %d exceeds the object limit", objectCount);
 #endif
 
 #if RETRO_USE_MOD_LOADER
@@ -1052,7 +1068,7 @@ void LoadStageBackground()
             stageLayouts[i].scrollSpeed = fileBuffer << 10;
             stageLayouts[i].scrollPos   = 0;
 
-            memset(stageLayouts[i].tiles, 0, TILELAYER_CHUNK_MAX * sizeof(ushort));
+            memset(stageLayouts[i].tiles, 0, TILELAYER_CHUNK_COUNT * sizeof(ushort));
             byte *lineScrollPtr = stageLayouts[i].lineScroll;
             memset(stageLayouts[i].lineScroll, 0, 0x7FFF);
 
@@ -1068,17 +1084,13 @@ void LoadStageBackground()
                     }
                     else {
                         FileRead(&buf[2], 1);
-                        int val = buf[1];
-                        int cnt = buf[2] - 1;
-                        for (int c = 0; c < cnt; ++c) {
-                            *lineScrollPtr++ = val;
-                            ++pos;
-                        }
+                        int index = buf[1];
+                        int cnt   = buf[2] - 1;
+                        for (int c = 0; c < cnt; ++c) *lineScrollPtr++ = index;
                     }
                 }
                 else {
                     *lineScrollPtr++ = buf[0];
-                    ++pos;
                 }
             }
 
@@ -1315,7 +1327,7 @@ void LoadStageGIFFile(int stageID)
         height |= (fileBuffer << 8);
 
         FileRead(&fileBuffer, 1); // Palette Size (thrown away) :/
-        FileRead(&fileBuffer, 1); // BG Colour index (thrown away)
+        FileRead(&fileBuffer, 1); // BG Color index (thrown away)
         FileRead(&fileBuffer, 1); // idk actually (still thrown away)
 
         byte clr[3];
@@ -1399,13 +1411,13 @@ void SetLayerDeformation(int selectedDef, int waveLength, int waveWidth, int wav
     if (waveType == 1) {
         id = YPos;
         for (int i = 0; i < waveSize; ++i) {
-            deformPtr[id] = waveWidth * sinVal512[(i << 9) / waveLength & 0x1FF] >> shift;
+            deformPtr[id] = waveWidth * sin512LookupTable[(i << 9) / waveLength & 0x1FF] >> shift;
             ++id;
         }
     }
     else {
         for (int i = 0; i < 0x200 * 0x100; i += 0x200) {
-            int val       = waveWidth * sinVal512[i / waveLength & 0x1FF] >> shift;
+            int val       = waveWidth * sin512LookupTable[i / waveLength & 0x1FF] >> shift;
             deformPtr[id] = val;
 #if RETRO_SOFTWARE_RENDER
             if (deformPtr[id] >= waveWidth)
@@ -1726,7 +1738,7 @@ void SetPlayerScreenPositionCDStyle(Entity *target)
 
     if (!target->gravity) {
         if (target->direction) {
-            if (cameraStyle == 3 || target->speed < -0x5F5C2) {
+            if (cameraStyle == CAMERASTYLE_EXTENDED_OFFSET_R || target->speed < -0x5F5C2) {
                 cameraShift = 2;
                 if (target->lookPosX <= 63) {
                     target->lookPosX += 2;
@@ -1744,7 +1756,7 @@ void SetPlayerScreenPositionCDStyle(Entity *target)
             }
         }
         else {
-            if (cameraStyle == 2 || target->speed > 0x5F5C2) {
+            if (cameraStyle == CAMERASTYLE_EXTENDED_OFFSET_L || target->speed > 0x5F5C2) {
                 cameraShift = 1;
                 if (target->lookPosX >= -63) {
                     target->lookPosX -= 2;
