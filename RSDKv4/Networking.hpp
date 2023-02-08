@@ -74,6 +74,6 @@ int GetRoomCode();
 void SetRoomCode(int code);
 #endif
 
-void SetNetworkGameName(int *a1, const char *name);
+void SetNetworkGameName(int *unused, const char *name);
 
 #endif
