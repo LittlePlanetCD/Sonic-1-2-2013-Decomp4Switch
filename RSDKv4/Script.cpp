@@ -3947,118 +3947,34 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptEvent)
                     case VAR_MUSICCURRENTTRACK: scriptEng.operands[i] = trackID; break;
                     case VAR_MUSICPOSITION: scriptEng.operands[i] = musicPosition; break;
 #if RETRO_REV03
-                    case VAR_KEYDOWNUP:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.up;
-                        break;
-                    case VAR_KEYDOWNDOWN:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.down;
-                        break;
-                    case VAR_KEYDOWNLEFT:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.left;
-                        break;
-                    case VAR_KEYDOWNRIGHT:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.right;
-                        break;
-                    case VAR_KEYDOWNBUTTONA:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.A;
-                        break;
-                    case VAR_KEYDOWNBUTTONB:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.B;
-                        break;
-                    case VAR_KEYDOWNBUTTONC:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.C;
-                        break;
-                    case VAR_KEYDOWNBUTTONX:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.X;
-                        break;
-                    case VAR_KEYDOWNBUTTONY:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.Y;
-                        break;
-                    case VAR_KEYDOWNBUTTONZ:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.Z;
-                        break;
-                    case VAR_KEYDOWNBUTTONL:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.L;
-                        break;
-                    case VAR_KEYDOWNBUTTONR:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.R;
-                        break;
-                    case VAR_KEYDOWNSTART:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.start;
-                        break;
-                    case VAR_KEYDOWNSELECT:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyDown.select;
-                        break;
-                    case VAR_KEYPRESSUP:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.up;
-                        break;
-                    case VAR_KEYPRESSDOWN:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.down;
-                        break;
-                    case VAR_KEYPRESSLEFT:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.left;
-                        break;
-                    case VAR_KEYPRESSRIGHT:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.right;
-                        break;
-                    case VAR_KEYPRESSBUTTONA:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.A;
-                        break;
-                    case VAR_KEYPRESSBUTTONB:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.B;
-                        break;
-                    case VAR_KEYPRESSBUTTONC:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.C;
-                        break;
-                    case VAR_KEYPRESSBUTTONX:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.X;
-                        break;
-                    case VAR_KEYPRESSBUTTONY:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.Y;
-                        break;
-                    case VAR_KEYPRESSBUTTONZ:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.Z;
-                        break;
-                    case VAR_KEYPRESSBUTTONL:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.L;
-                        break;
-                    case VAR_KEYPRESSBUTTONR:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.R;
-                        break;
-                    case VAR_KEYPRESSSTART:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.start;
-                        break;
-                    case VAR_KEYPRESSSELECT:
-                        if (arrayVal <= 1)
-                            scriptEng.operands[i] = keyPress.select;
-                        break;
+                    case VAR_KEYDOWNUP: scriptEng.operands[i] = keyDown.up && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNDOWN: scriptEng.operands[i] = keyDown.down && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNLEFT: scriptEng.operands[i] = keyDown.left && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNRIGHT: scriptEng.operands[i] = keyDown.right && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONA: scriptEng.operands[i] = keyDown.A && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONB: scriptEng.operands[i] = keyDown.B && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONC: scriptEng.operands[i] = keyDown.C && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONX: scriptEng.operands[i] = keyDown.X && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONY: scriptEng.operands[i] = keyDown.Y && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONZ: scriptEng.operands[i] = keyDown.Z && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONL: scriptEng.operands[i] = keyDown.L && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNBUTTONR: scriptEng.operands[i] = keyDown.R && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNSTART: scriptEng.operands[i] = keyDown.start && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYDOWNSELECT: scriptEng.operands[i] = keyDown.select && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSUP: scriptEng.operands[i] = keyPress.up && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSDOWN: scriptEng.operands[i] = keyPress.down && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSLEFT: scriptEng.operands[i] = keyPress.left && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSRIGHT: scriptEng.operands[i] = keyPress.right && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONA: scriptEng.operands[i] = keyPress.A && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONB: scriptEng.operands[i] = keyPress.B && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONC: scriptEng.operands[i] = keyPress.C && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONX: scriptEng.operands[i] = keyPress.X && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONY: scriptEng.operands[i] = keyPress.Y && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONZ: scriptEng.operands[i] = keyPress.Z && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONL: scriptEng.operands[i] = keyPress.L && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSBUTTONR: scriptEng.operands[i] = keyPress.R && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSSTART: scriptEng.operands[i] = keyPress.start && (arrayVal <= 1 || arrayVal >= 32); break;
+                    case VAR_KEYPRESSSELECT: scriptEng.operands[i] = keyPress.select && (arrayVal <= 1 || arrayVal >= 32); break;
 #else
                     case VAR_KEYDOWNUP: scriptEng.operands[i] = keyDown.up; break;
                     case VAR_KEYDOWNDOWN: scriptEng.operands[i] = keyDown.down; break;
@@ -4149,12 +4065,42 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptEvent)
                     // Origins Extras
                     // Due to using regular v4, these don't support array values like origins expects, so its always screen[0]
                     case VAR_SCREENCURRENTID: scriptEng.operands[i] = 0; break;
-                    case VAR_CAMERAENABLED: scriptEng.operands[i] = cameraEnabled; break;
-                    case VAR_CAMERATARGET: scriptEng.operands[i] = cameraTarget; break;
-                    case VAR_CAMERASTYLE: scriptEng.operands[i] = cameraStyle; break;
-                    case VAR_CAMERAXPOS: scriptEng.operands[i] = cameraXPos; break;
-                    case VAR_CAMERAYPOS: scriptEng.operands[i] = cameraYPos; break;
-                    case VAR_CAMERAADJUSTY: scriptEng.operands[i] = cameraAdjustY; break;
+                    case VAR_CAMERAENABLED:
+                        if (arrayVal == 0)
+                            scriptEng.operands[i] = cameraEnabled;
+                        else
+                            scriptEng.operands[i] = 0;
+                        break;
+                    case VAR_CAMERATARGET:
+                        if (arrayVal == 0)
+                            scriptEng.operands[i] = cameraTarget;
+                        else
+                            scriptEng.operands[i] = 0;
+                        break;
+                    case VAR_CAMERASTYLE:
+                        if (arrayVal == 0)
+                            scriptEng.operands[i] = cameraStyle;
+                        else
+                            scriptEng.operands[i] = 0;
+                        break;
+                    case VAR_CAMERAXPOS:
+                        if (arrayVal == 0)
+                            scriptEng.operands[i] = cameraXPos;
+                        else
+                            scriptEng.operands[i] = 0;
+                        break;
+                    case VAR_CAMERAYPOS:
+                        if (arrayVal == 0)
+                            scriptEng.operands[i] = cameraYPos;
+                        else
+                            scriptEng.operands[i] = 0;
+                        break;
+                    case VAR_CAMERAADJUSTY:
+                        if (arrayVal == 0)
+                            scriptEng.operands[i] = cameraAdjustY;
+                        else
+                            scriptEng.operands[i] = 0;
+                        break;
 #endif
 
 #if RETRO_USE_HAPTICS
@@ -6167,115 +6113,115 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptEvent)
                     case VAR_MUSICPOSITION: break;
 #if RETRO_REV03
                     case VAR_KEYDOWNUP:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.up = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNDOWN:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.down = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNLEFT:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.left = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNRIGHT:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.right = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONA:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.A = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONB:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.B = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONC:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.C = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONX:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.X = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONY:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.Y = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONZ:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.Z = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONL:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.L = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNBUTTONR:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.R = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNSTART:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.start = scriptEng.operands[i];
                         break;
                     case VAR_KEYDOWNSELECT:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyDown.select = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSUP:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.up = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSDOWN:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.down = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSLEFT:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.left = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSRIGHT:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.right = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONA:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.A = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONB:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.B = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONC:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.C = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONX:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.X = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONY:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.Y = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONZ:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.Z = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONL:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.L = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSBUTTONR:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.R = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSSTART:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.start = scriptEng.operands[i];
                         break;
                     case VAR_KEYPRESSSELECT:
-                        if (arrayVal <= 1)
+                        if (arrayVal <= 1 || arrayVal >= 32)
                             keyPress.select = scriptEng.operands[i];
                         break;
 #else
@@ -6381,27 +6327,27 @@ void ProcessScript(int scriptCodeStart, int jumpTableStart, byte scriptEvent)
                     // Due to using regular v4, these don't support array values like origins expects, so its always screen[0]
                     case VAR_SCREENCURRENTID: break;
                     case VAR_CAMERAENABLED:
-                        if (arrayVal <= 1)
+                        if (arrayVal == 0)
                             cameraEnabled = scriptEng.operands[i];
                         break;
                     case VAR_CAMERATARGET:
-                        if (arrayVal <= 1)
+                        if (arrayVal == 0)
                             cameraTarget = scriptEng.operands[i];
                         break;
                     case VAR_CAMERASTYLE:
-                        if (arrayVal <= 1)
+                        if (arrayVal == 0)
                             cameraStyle = scriptEng.operands[i];
                         break;
                     case VAR_CAMERAXPOS:
-                        if (arrayVal <= 1)
+                        if (arrayVal == 0)
                             cameraXPos = scriptEng.operands[i];
                         break;
                     case VAR_CAMERAYPOS:
-                        if (arrayVal <= 1)
+                        if (arrayVal == 0)
                             cameraYPos = scriptEng.operands[i];
                         break;
                     case VAR_CAMERAADJUSTY:
-                        if (arrayVal <= 1)
+                        if (arrayVal == 0)
                             cameraAdjustY = scriptEng.operands[i];
                         break;
 #endif
