@@ -1188,6 +1188,11 @@ void ShowWebsite(int websiteID)
     }
 }
 
+// In the Sega Forever versions of S1 & S2, there's a feature where you can choose to watch an ad to continue from a Game Over
+// We obviously can't do that here, so let's just take the L
+void NativePlayerWaitingAds() { SetGlobalVariableByName("waitingAds.result", 2); }
+void NativeWaterPlayerWaitingAds() { SetGlobalVariableByName("waitingAds.water", 2); }
+
 #if RETRO_REV03
 enum NotifyCallbackIDs {
     NOTIFY_DEATH_EVENT        = 128,
@@ -1236,14 +1241,24 @@ void NotifyCallback(int *callback, int *param1, int *param2, int *param3)
         case NOTIFY_DEATH_EVENT: PrintLog("NOTIFY: DeathEvent() -> %d", *param1); break;
         case NOTIFY_TOUCH_SIGNPOST: PrintLog("NOTIFY: TouchSignPost() -> %d", *param1); break;
         case NOTIFY_HUD_ENABLE: PrintLog("NOTIFY: HUDEnable() -> %d", *param1); break;
-        case NOTIFY_ADD_COIN: PrintLog("NOTIFY: AddCoin() -> %d", *param1); break;
+        case NOTIFY_ADD_COIN:
+            PrintLog("NOTIFY: AddCoin() -> %d", *param1);
+            SetGlobalVariableByName("game.coinCount", GetGlobalVariableByName("game.coinCount") + *param1);
+            break;
         case NOTIFY_KILL_ENEMY: PrintLog("NOTIFY: KillEnemy() -> %d", *param1); break;
         case NOTIFY_SAVESLOT_SELECT: PrintLog("NOTIFY: SaveSlotSelect() -> %d", *param1); break;
         case NOTIFY_FUTURE_PAST: PrintLog("NOTIFY: FuturePast() -> %d", *param1); break;
         case NOTIFY_GOTO_FUTURE_PAST: PrintLog("NOTIFY: GotoFuturePast() -> %d", *param1); break;
         case NOTIFY_BOSS_END: PrintLog("NOTIFY: BossEnd() -> %d", *param1); break;
         case NOTIFY_SPECIAL_END: PrintLog("NOTIFY: SpecialEnd() -> %d", *param1); break;
-        case NOTIFY_DEBUGPRINT: PrintLog("NOTIFY: DebugPrint() -> %d, %d, %d", *param1, *param2, *param3); break;
+        case NOTIFY_DEBUGPRINT:
+            // This callback can be called with either CallNativeFunction2 or CallNativeFunction4
+            // todo: find a better way to check for which one was used
+            if (*param2 == 264865096)
+                PrintLog("NOTIFY: DebugPrint() -> %d", *param1);
+            else
+                PrintLog("NOTIFY: DebugPrint() -> %d, %d, %d", *param1, *param2, *param3);
+            break;
         case NOTIFY_KILL_BOSS: PrintLog("NOTIFY: KillBoss() -> %d", *param1); break;
         case NOTIFY_TOUCH_EMERALD: PrintLog("NOTIFY: TouchEmerald() -> %d", *param1); break;
         case NOTIFY_STATS_ENEMY: PrintLog("NOTIFY: StatsEnemy() -> %d, %d, %d", *param1, *param2, *param3); break;

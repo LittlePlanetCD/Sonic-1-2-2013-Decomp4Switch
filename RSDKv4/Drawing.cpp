@@ -302,18 +302,22 @@ void FlipScreen()
 {
 #if !RETRO_USE_ORIGINAL_CODE
 #if RETRO_PLATFORM != RETRO_SWITCH //switch doesn't need this it's builtin
-    if (Engine.dimTimer < Engine.dimLimit) {
-        if (Engine.dimPercent < 1.0) {
-            Engine.dimPercent += 0.05;
-            if (Engine.dimPercent > 1.0)
-                Engine.dimPercent = 1.0;
+    float dimAmount = 1.0;
+    if ((!Engine.masterPaused || Engine.frameStep) && !drawStageGFXHQ) {
+        if (Engine.dimTimer < Engine.dimLimit) {
+            if (Engine.dimPercent < 1.0) {
+                Engine.dimPercent += 0.05;
+                if (Engine.dimPercent > 1.0)
+                    Engine.dimPercent = 1.0;
+            }
         }
+        else if (Engine.dimPercent > 0.25 && Engine.dimLimit >= 0) {
+            Engine.dimPercent *= 0.9;
+        }
+
+        dimAmount = Engine.dimMax * Engine.dimPercent;
     }
-    else if (Engine.dimPercent > 0.25 && Engine.dimLimit >= 0) {
-        Engine.dimPercent *= 0.9;
-    }
-#endif //! RETRO_PLATFORM != RETRO_SWITCH
-    float dimAmount = Engine.dimMax * Engine.dimPercent;
+#endif
 
 #if RETRO_SOFTWARE_RENDER && !RETRO_USING_OPENGL
 #if RETRO_USING_SDL2
