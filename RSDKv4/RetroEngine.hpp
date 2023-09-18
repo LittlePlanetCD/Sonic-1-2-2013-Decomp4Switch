@@ -11,6 +11,9 @@
 #define RETRO_USE_MOD_LOADER (!RETRO_USE_ORIGINAL_CODE && 1)
 #define RETRO_USE_NETWORKING (!RETRO_USE_ORIGINAL_CODE && 1)
 
+// Forces all DLC flags to be disabled, this should be enabled in any public releases
+#define RSDK_AUTOBUILD (0)
+
 // ================
 // STANDARD LIBS
 // ================
@@ -215,7 +218,7 @@ typedef unsigned int uint;
 // 0 = S1 release RSDKv4 version
 // 1 = S2 release RSDKv4 version
 // 2 = S3 POC RSDKv4 version (I have no idea how we have this but woohoo apparently)
-// 3 = Sonic Origins version
+// 3 = Sonic Origins (Plus) version
 #define RSDK_REVISION (3)
 
 // reverts opcode list back to how it was in earliest S1 builds, fixes bugs on some datafiles
@@ -431,7 +434,7 @@ public:
 
     char gameWindowText[0x40];
     char gameDescriptionText[0x100];
-    const char *gameVersion  = "1.3.1";
+    const char *gameVersion  = "1.3.2";
     const char *gamePlatform = nullptr;
 
     int gameTypeID       = 0;
