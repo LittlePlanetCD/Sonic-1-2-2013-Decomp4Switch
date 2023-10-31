@@ -1251,12 +1251,9 @@ void NotifyCallback(int *callback, int *param1, int *param2, int *param3)
         case NOTIFY_BOSS_END: PrintLog("NOTIFY: BossEnd() -> %d", *param1); break;
         case NOTIFY_SPECIAL_END: PrintLog("NOTIFY: SpecialEnd() -> %d", *param1); break;
         case NOTIFY_DEBUGPRINT:
-            // This callback can be called with either CallNativeFunction2 or CallNativeFunction4
-            // todo: find a better way to check for which one was used
-            if (*param2 == 264865096)
-                PrintLog("NOTIFY: DebugPrint() -> %d", *param1);
-            else
-                PrintLog("NOTIFY: DebugPrint() -> %d, %d, %d", *param1, *param2, *param3);
+            // Although there are instances of this being called from both CallNativeFunction2 and CallNativeFunction4 in Origins' scripts, there's no way we can tell which one was used here to handle possible errors
+            // Due to this, we'll only print param1 regardless of the opcode used
+            PrintLog("NOTIFY: DebugPrint() -> %d", *param1);
             break;
         case NOTIFY_KILL_BOSS: PrintLog("NOTIFY: KillBoss() -> %d", *param1); break;
         case NOTIFY_TOUCH_EMERALD: PrintLog("NOTIFY: TouchEmerald() -> %d", *param1); break;
@@ -1271,7 +1268,7 @@ void NotifyCallback(int *callback, int *param1, int *param2, int *param3)
             stageMode         = STAGEMODE_LOAD;
             Engine.gameMode   = ENGINE_MAINGAME;
             stageListPosition = 0;
-			break;
+            break;
         case NOTIFY_STATS_PARAM_1: PrintLog("NOTIFY: StatsParam1() -> %d, %d, %d", *param1, *param2, *param3); break;
         case NOTIFY_STATS_PARAM_2: PrintLog("NOTIFY: StatsParam2() -> %d", *param1); break;
         case NOTIFY_CHARACTER_SELECT:
