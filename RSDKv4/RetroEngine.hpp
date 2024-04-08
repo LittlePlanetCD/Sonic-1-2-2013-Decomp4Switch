@@ -221,17 +221,17 @@ typedef unsigned int uint;
 // 3 = Sonic Origins (Plus) version
 #define RSDK_REVISION (3)
 
-// reverts opcode list back to how it was in earliest S1 builds, fixes bugs on some datafiles
+// Revision from early versions of Sonic 1
 #define RETRO_REV00 (RSDK_REVISION == 0)
 
-// reverts opcode list back to how it was in earliest S2 builds, fixes bugs on some datafiles
-#define RETRO_REV01 (RSDK_REVISION == 1)
+// Revision from early versions of Sonic 2
+#define RETRO_REV01 (RSDK_REVISION >= 1)
 
-// reverts opcode list back to how it was in the S3 POC, this is the most common opcode list
-#define RETRO_REV02 (RSDK_REVISION == 2)
+// Revision from the S3&K POC, this is also used in the Sega Forever versions of S1 & S2
+#define RETRO_REV02 (RSDK_REVISION >= 2)
 
-// the default, uses the Sonic Origins opcode list taken from RSDKv5U
-#define RETRO_REV03 (RSDK_REVISION == 3)
+// Revision included as part of RSDKv5U (Sonic Origins)
+#define RETRO_REV03 (RSDK_REVISION >= 3)
 
 enum RetroLanguages {
     RETRO_EN = 0,

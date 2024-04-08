@@ -287,7 +287,7 @@ void InitUserdata()
         ini.SetBool("Window", "Borderless", Engine.borderless = false);
         ini.SetBool("Window", "VSync", Engine.vsync = false);
         ini.SetInteger("Window", "ScalingMode", Engine.scalingMode = 0);
-        ini.SetInteger("Window", "WindowScale", Engine.windowScale = 2);
+        ini.SetInteger("Window", "WindowScale", Engine.windowScale = 4);
         ini.SetInteger("Window", "ScreenWidth", SCREEN_XSIZE_CONFIG = DEFAULT_SCREEN_XSIZE);
         SCREEN_XSIZE = SCREEN_XSIZE_CONFIG;
         ini.SetInteger("Window", "RefreshRate", Engine.refreshRate = 60);

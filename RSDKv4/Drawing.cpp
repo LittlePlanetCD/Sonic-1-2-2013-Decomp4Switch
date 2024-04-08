@@ -3206,7 +3206,7 @@ void DrawSpriteScaled(int direction, int XPos, int YPos, int pivotX, int pivotY,
     }
 #endif
 }
-#if RETRO_REV00 || RETRO_REV01
+#if !RETRO_REV02
 void DrawScaledChar(int direction, int XPos, int YPos, int pivotX, int pivotY, int scaleX, int scaleY, int width, int height, int sprX, int sprY,
                     int sheetID)
 {
@@ -4220,7 +4220,11 @@ void DrawTexturedFace(void *v, byte sheetID)
             }
             ushort *fbPtr = &frameBufferPtr[startX];
             frameBufferPtr += GFX_LINESIZE;
+#if RETRO_REV02
+            int counter = posDifference;
+#else
             int counter = posDifference + 1;
+#endif
             while (counter--) {
                 if (UPos < 0)
                     UPos = 0;
@@ -4349,7 +4353,11 @@ void DrawTexturedFaceBlended(void *v, byte sheetID)
             }
             ushort *fbPtr = &frameBufferPtr[startX];
             frameBufferPtr += GFX_LINESIZE;
+#if RETRO_REV02
             int counter = posDifference;
+#else
+            int counter = posDifference + 1;
+#endif
             while (counter--) {
                 if (UPos < 0)
                     UPos = 0;
@@ -4368,7 +4376,7 @@ void DrawTexturedFaceBlended(void *v, byte sheetID)
 #endif
 }
 
-#if RETRO_REV00 || RETRO_REV01
+#if !RETRO_REV02
 void DrawBitmapText(void *menu, int XPos, int YPos, int scale, int spacing, int rowStart, int rowCount)
 {
     TextMenu *tMenu = (TextMenu *)menu;
