@@ -39,7 +39,6 @@ int dcError         = 0;
 float lastPing      = 0;
 
 bool waitingForPing = false;
-bool waitForVerify  = false;
 
 uint64_t lastTime = 0;
 
@@ -278,7 +277,6 @@ private:
                 return;
             }
             case SV_VERIFY_CLEAR: {
-                // waitForVerify = false;
                 repeat.header = 0x80;
                 return;
             }
@@ -368,8 +366,6 @@ void SendData(bool verify)
     send.header         = CL_DATA + verify;
     send.data.multiData = multiplayerDataOUT;
     session->write(send, verify);
-    // if (verify)
-    //    waitForVerify = true;
 }
 
 void DisconnectNetwork(bool finalClose)
