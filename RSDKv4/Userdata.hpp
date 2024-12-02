@@ -1,8 +1,6 @@
 #ifndef USERDATA_H
 #define USERDATA_H
 
-#include "Networking.hpp"
-
 #define GLOBALVAR_COUNT (0x100)
 
 #define ACHIEVEMENT_COUNT (0x40)

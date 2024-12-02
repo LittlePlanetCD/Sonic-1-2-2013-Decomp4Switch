@@ -6,13 +6,22 @@
 
 // Setting this to true removes (almost) ALL changes from the original code, the trade off is that a playable game cannot be built, it is advised to
 // be set to true only for preservation purposes
+#ifndef RETRO_USE_ORIGINAL_CODE
 #define RETRO_USE_ORIGINAL_CODE (0)
+#endif
 
+#ifndef RETRO_USE_MOD_LOADER
 #define RETRO_USE_MOD_LOADER (!RETRO_USE_ORIGINAL_CODE && 1)
+#endif
+
+#ifndef RETRO_USE_NETWORKING
 #define RETRO_USE_NETWORKING (!RETRO_USE_ORIGINAL_CODE && 1)
+#endif
 
 // Forces all DLC flags to be disabled, this should be enabled in any public releases
+#ifndef RSDK_AUTOBUILD
 #define RSDK_AUTOBUILD (0)
+#endif
 
 // ================
 // STANDARD LIBS
@@ -87,7 +96,7 @@ typedef unsigned int uint;
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
 #else
 //#error "No Platform was defined"
-#define RETRO_PLATFORM   (RETRO_WIN)
+#define RETRO_PLATFORM   (RETRO_LINUX)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
 #endif
 
@@ -100,10 +109,19 @@ typedef unsigned int uint;
 #define BASE_PATH ""
 #endif
 
+#if !defined(RETRO_USE_SDL2) && !defined(RETRO_USE_SDL1)
+#define RETRO_USE_SDL2 (1)
+#endif
+
 #if RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_OSX || RETRO_PLATFORM == RETRO_LINUX || RETRO_PLATFORM == RETRO_UWP                       \
     || RETRO_PLATFORM == RETRO_ANDROID || RETRO_PLATFORM == RETRO_SWITCH
+#ifdef RETRO_USE_SDL2
 #define RETRO_USING_SDL1 (0)
 #define RETRO_USING_SDL2 (1)
+#elif defined(RETRO_USE_SDL1)
+#define RETRO_USING_SDL1 (1)
+#define RETRO_USING_SDL2 (0)
+#endif
 #else // Since its an else & not an elif these platforms probably aren't supported yet
 #define RETRO_USING_SDL1 (0)
 #define RETRO_USING_SDL2 (0)
@@ -117,21 +135,20 @@ typedef unsigned int uint;
 #define RETRO_GAMEPLATFORM (RETRO_STANDARD)
 #endif
 
-#define RETRO_SW_RENDER  (0)
-#define RETRO_HW_RENDER  (1)
-#define RETRO_RENDERTYPE (RETRO_SW_RENDER)
+#define RETRO_SW_RENDER (0)
+#define RETRO_HW_RENDER (1)
 
 #ifdef USE_SW_REN
-#undef RETRO_RENDERTYPE
+#define RETRO_RENDERTYPE (RETRO_SW_RENDER)
+#elif defined(USE_HW_REN)
+#define RETRO_RENDERTYPE (RETRO_HW_RENDER)
+#elif !defined(RETRO_RENDERTYPE)
 #define RETRO_RENDERTYPE (RETRO_SW_RENDER)
 #endif
 
-#ifdef USE_HW_REN
-#undef RETRO_RENDERTYPE
-#define RETRO_RENDERTYPE (RETRO_HW_RENDER)
-#endif
-
+#ifndef RETRO_USING_OPENGL
 #define RETRO_USING_OPENGL (1)
+#endif
 
 #define RETRO_SOFTWARE_RENDER (RETRO_RENDERTYPE == RETRO_SW_RENDER)
 //#define RETRO_HARDWARE_RENDER (RETRO_RENDERTYPE == RETRO_HW_RENDER)
@@ -214,12 +231,10 @@ typedef unsigned int uint;
 
 #endif
 
-// Timeline:
-// 0 = S1 release RSDKv4 version
-// 1 = S2 release RSDKv4 version
-// 2 = S3 POC RSDKv4 version (I have no idea how we have this but woohoo apparently)
-// 3 = Sonic Origins (Plus) version
+// Determines which revision to use (see defines below for specifics). Datafiles from REV00 and REV01 builds will not work on later revisions and vice versa.
+#ifndef RSDK_REVISION
 #define RSDK_REVISION (3)
+#endif
 
 // Revision from early versions of Sonic 1
 #define RETRO_REV00 (RSDK_REVISION == 0)
@@ -437,7 +452,11 @@ public:
 
     char gameWindowText[0x40];
     char gameDescriptionText[0x100];
+#ifdef DECOMP_VERSION
+    const char *gameVersion = DECOMP_VERSION;
+#else
     const char *gameVersion  = "1.3.2";
+#endif
     const char *gamePlatform = nullptr;
 
     int gameTypeID       = 0;
